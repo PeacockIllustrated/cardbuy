@@ -45,21 +45,37 @@ type BurstProps = {
   points: string;
   fill: string;
   className?: string;
+  /** Size of the pop-block style ink shadow (SVG units; 200-unit viewBox). */
+  shadow?: number;
+  strokeWidth?: number;
 };
 
-function Burst({ points, fill, className = "" }: BurstProps) {
+function Burst({
+  points,
+  fill,
+  className = "",
+  shadow,
+  strokeWidth = 5,
+}: BurstProps) {
   return (
     <svg
-      viewBox="0 0 200 200"
+      viewBox="-16 -16 232 232"
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
       className={`absolute pointer-events-none ${className}`.trim()}
     >
+      {shadow ? (
+        <polygon
+          points={points}
+          fill="var(--color-ink)"
+          transform={`translate(${shadow} ${shadow})`}
+        />
+      ) : null}
       <polygon
         points={points}
         fill={fill}
         stroke="var(--color-ink)"
-        strokeWidth="4"
+        strokeWidth={strokeWidth}
         strokeLinejoin="miter"
       />
     </svg>
@@ -68,22 +84,22 @@ function Burst({ points, fill, className = "" }: BurstProps) {
 
 const BURST_PALETTE: Record<
   NonNullable<Props["accent"]>,
-  { primary: string; secondary: string; tertiary: string }
+  { primary: string; secondary: string }
 > = {
+  // "Yellow" accent became a paper-white primary with a teal peek —
+  // the yellow-on-pink was too close to the section backdrop and
+  // read as tacky. White halo is cleaner and still brand-correct.
   yellow: {
-    primary: "var(--color-yellow)",
-    secondary: "var(--color-pink)",
-    tertiary: "var(--color-teal)",
+    primary: "var(--color-paper-strong)",
+    secondary: "var(--color-teal)",
   },
   teal: {
     primary: "var(--color-teal)",
-    secondary: "var(--color-pink)",
-    tertiary: "var(--color-yellow)",
+    secondary: "var(--color-paper-strong)",
   },
   pink: {
-    primary: "var(--color-pink)",
-    secondary: "var(--color-yellow)",
-    tertiary: "var(--color-teal)",
+    primary: "var(--color-paper-strong)",
+    secondary: "var(--color-teal)",
   },
 };
 
@@ -109,24 +125,23 @@ export function ListingCard({ listing, accent = "yellow" }: Props) {
       className="group block"
     >
       {/* Transparent burst well — the section backdrop shows through.
-          Three bursts are enough to read as pop-art without crowding
-          the card; placed asymmetrically so negative space balances
-          the silhouette. */}
-      <div className="relative flex justify-end flex-col items-center pt-4 pb-3 min-h-[290px] overflow-hidden">
+          One large halo burst sits centred behind the card, one small
+          accent burst tucks into a corner. Both fully contained in
+          the well — no clipping, no rays cut off at the tile edge. */}
+      <div className="relative flex justify-end flex-col items-center pt-6 pb-4 min-h-[310px]">
         <Burst
           points={BURST_A}
           fill={palette.primary}
-          className="left-[-12%] top-[8%] w-[72%] h-[72%] rotate-[-8deg]"
-        />
-        <Burst
-          points={BURST_B}
-          fill={palette.secondary}
-          className="right-[-14%] top-[-6%] w-[54%] h-[54%] rotate-[20deg]"
+          shadow={8}
+          strokeWidth={5}
+          className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] h-[92%] rotate-[-10deg]"
         />
         <Burst
           points={BURST_C}
-          fill={palette.tertiary}
-          className="right-[-6%] bottom-[6%] w-[40%] h-[40%] rotate-[-14deg]"
+          fill={palette.secondary}
+          shadow={5}
+          strokeWidth={5}
+          className="top-[3%] right-[3%] w-[38%] h-[38%] rotate-[22deg]"
         />
 
         <div className="relative z-[1]">
