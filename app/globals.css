@@ -1,0 +1,538 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------------
+ * Phase 5 pop-art brand palette.
+ * See PHASE5_BRANDING.md for token rationale and surface system.
+ * Phase 1's grayscale-only lockdown was lifted on phase promotion.
+ * ----------------------------------------------------------------*/
+@theme {
+  /* Wipe Tailwind's default palette so unauthorised colours don't sneak in. */
+  --color-*: initial;
+
+  /* Core */
+  --color-ink: #0a0a0a;            /* outlines, headings, primary text */
+  --color-paper: #fff8e7;          /* cream page background */
+  --color-paper-strong: #ffffff;   /* pure white inner wells */
+
+  /* Accents — saturated three-up */
+  --color-pink: #ff4eb8;           /* primary accent · CTAs · featured */
+  --color-teal: #27d3c4;           /* secondary · "buy" surfaces · badges */
+  --color-yellow: #ffe600;         /* tertiary · "sell" surfaces · highlights */
+
+  /* Support */
+  --color-rule: #e8dfc7;           /* cream-toned hairline */
+  --color-muted: #7a7466;          /* secondary text on cream */
+  --color-secondary: #4a4438;      /* darker secondary text */
+  --color-warn: #c00000;           /* admin DevBanner ONLY */
+
+  /* Typography (font CSS vars come from next/font in app/layout.tsx) */
+  --font-display: var(--font-archivo-black), "Archivo Black", system-ui, sans-serif;
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Geometry */
+  --radius-DEFAULT: 6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+}
+
+/* ----------------------------------------------------------------
+ * Base body
+ * ----------------------------------------------------------------*/
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Tabular numerals on prices, stock counts, table cells */
+.tabular,
+table,
+input[type="number"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----------------------------------------------------------------
+ * Pop-art block utility — the signature look.
+ * 3px ink outline + 4px offset shadow that lifts on hover.
+ * Applied to primary CTAs, featured tiles, hero blocks.
+ * ----------------------------------------------------------------*/
+.pop-block {
+  border: 3px solid var(--color-ink);
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+  transition: box-shadow 120ms ease-out, transform 120ms ease-out;
+}
+.pop-block:hover {
+  box-shadow: 6px 6px 0 0 var(--color-ink);
+  transform: translate(-1px, -1px);
+}
+.pop-block:active {
+  box-shadow: 0 0 0 0 var(--color-ink);
+  transform: translate(3px, 3px);
+}
+
+/* Quieter card surface — same outline, smaller shadow, no lift. */
+.pop-card {
+  border: 3px solid var(--color-ink);
+  box-shadow: 3px 3px 0 0 var(--color-ink);
+  background: var(--color-paper-strong);
+}
+
+/* Rule between table rows on cream — needs to be ink-tinted, not grey */
+.pop-rule {
+  border-color: var(--color-ink);
+}
+
+/* Display-font helper that respects all-caps + tight tracking */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+/* Selection: invert with pink for personality */
+::selection {
+  background: var(--color-pink);
+  color: var(--color-ink);
+}
+
+/* Default focus ring — visible on every accent */
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------
+ * Interactive card hover system — 3D tilt, holo shimmer, sparkles.
+ * Driven by mouse-tracked CSS vars (--mx, --my, --rx, --ry) set from
+ * the CardImage client component. Respects reduced motion.
+ * ----------------------------------------------------------------*/
+.card-3d {
+  --mx: 50%;
+  --my: 50%;
+  --rx: 0deg;
+  --ry: 0deg;
+  --lift: 0px;
+  --scale: 1;
+  transform-style: preserve-3d;
+  perspective: 700px;
+  transition: transform 120ms ease-out;
+  will-change: transform;
+}
+.card-3d-inner {
+  transform:
+    translateZ(var(--lift))
+    rotateX(var(--rx))
+    rotateY(var(--ry))
+    scale(var(--scale));
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 160ms ease-out;
+  transform-style: preserve-3d;
+}
+.card-3d:hover .card-3d-inner,
+.card-3d.card-3d-engaged .card-3d-inner {
+  box-shadow:
+    calc(var(--ry) / -1deg * 0.9px) calc(var(--rx) / 1deg * 0.9px) 0 0 rgba(10, 10, 10, 0.5),
+    0 24px 48px -16px rgba(10, 10, 10, 0.3),
+    0 0 0 1px rgba(10, 10, 10, 0.4);
+}
+
+/* Holo shimmer — a cursor-tracked rainbow layer that only reads on
+ * cards marked `.card-holo`. Two stacked gradients: a sharp white
+ * highlight and a dispersed rainbow band. color-dodge blends with the
+ * card art so dark ink stays ink-y but the holo foils pop. */
+.card-holo::before,
+.card-holo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+  mix-blend-mode: color-dodge;
+  border-radius: inherit;
+}
+.card-holo::before {
+  background:
+    radial-gradient(
+      circle at var(--mx) var(--my),
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.15) 18%,
+      transparent 45%
+    );
+}
+.card-holo::after {
+  background:
+    linear-gradient(
+      115deg,
+      transparent 20%,
+      hsla(330, 100%, 68%, 0.55) 36%,
+      hsla(200, 100%, 66%, 0.55) 50%,
+      hsla(120, 100%, 66%, 0.55) 64%,
+      hsla(50,  100%, 66%, 0.55) 78%,
+      transparent 92%
+    );
+  background-size: 220% 220%;
+  background-position: calc(var(--mx) * 1.2) calc(var(--my) * 1.2);
+  mix-blend-mode: overlay;
+}
+.card-3d:hover .card-holo::before,
+.card-3d:hover .card-holo::after,
+.card-3d.card-3d-engaged .card-holo::before,
+.card-3d.card-3d-engaged .card-holo::after {
+  opacity: 1;
+}
+
+/* Sparkles — six tiny 4-point stars scattered via per-sparkle vars.
+ * Hidden by default, bloom in staggered on hover. */
+.card-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.card-sparkle {
+  position: absolute;
+  top: var(--sy, 50%);
+  left: var(--sx, 50%);
+  width: var(--sz, 10px);
+  height: var(--sz, 10px);
+  transform: translate(-50%, -50%) rotate(0deg) scale(0);
+  opacity: 0;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      #fff 10deg,
+      transparent 20deg,
+      transparent 80deg,
+      #fff 100deg,
+      transparent 110deg,
+      transparent 170deg,
+      #fff 190deg,
+      transparent 200deg,
+      transparent 260deg,
+      #fff 280deg,
+      transparent 290deg
+    );
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+.card-3d:hover .card-sparkle,
+.card-3d.card-3d-engaged .card-sparkle {
+  animation: card-sparkle 1.4s var(--sd, 0s) infinite ease-in-out;
+}
+@keyframes card-sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(0deg) scale(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(180deg) scale(1);
+  }
+  70% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) rotate(320deg) scale(0.6);
+  }
+}
+
+/* Honour prefers-reduced-motion — disable tilt, holo, and sparkles. */
+@media (prefers-reduced-motion: reduce) {
+  .card-3d-inner { transform: none !important; }
+  .card-holo::before,
+  .card-holo::after { display: none; }
+  .card-sparkle { animation: none !important; opacity: 0 !important; }
+}
+
+/* ----------------------------------------------------------------
+ * Pack tile — foil-sealed booster wrapper.
+ *
+ * Layers (bottom → top in stacking order):
+ *   .pack-burst  (hidden at rest, emerges on open)
+ *   .pack-face   (the wrapper — body + lid + sticker + foil layers)
+ *     .pack-body       (logo, bottom plate, sticker — stays put)
+ *     .pack-lid        (top 22% — breaks away during opening)
+ *     .pack-flash      (end-of-sequence brightness wash)
+ *
+ * Animations fire under the `.pack-opening` class on the .pack-tile root.
+ * Respects prefers-reduced-motion (all animations become no-ops).
+ * ----------------------------------------------------------------*/
+
+.pack-tile {
+  position: relative;
+  transform-style: preserve-3d;
+  perspective: 900px;
+  isolation: isolate;
+}
+
+/* The lid's zigzag bottom edge — a single triangular wave. Only visible
+ * once the lid has travelled up enough to expose the line. Implemented
+ * as an absolutely-positioned sliver with a conic-zig clip-path. */
+.pack-lid {
+  z-index: 2;
+  transform-origin: 50% 100%;
+}
+.pack-lid-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 8px;
+  background: inherit;
+  clip-path: polygon(
+    0 0,
+    5% 100%, 10% 0,
+    15% 100%, 20% 0,
+    25% 100%, 30% 0,
+    35% 100%, 40% 0,
+    45% 100%, 50% 0,
+    55% 100%, 60% 0,
+    65% 100%, 70% 0,
+    75% 100%, 80% 0,
+    85% 100%, 90% 0,
+    95% 100%, 100% 0
+  );
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Slow rotating iridescent wash — runs always, adds life at rest. */
+.pack-iridescent {
+  animation: pack-iridescent-rotate 14s linear infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes pack-iridescent-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Mini cards that burst out of the pack during opening. Start hidden,
+ * fan out to five cardinal directions. Each card has its own translate
+ * target + rotation + delay so the fan feels organic. */
+.pack-burst {
+  position: absolute;
+  inset: 18% 0 18% 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 1;
+}
+.pack-burst-card {
+  position: absolute;
+  width: 26%;
+  aspect-ratio: 5 / 7;
+  border: 2px solid var(--color-ink);
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 0 rgba(10, 10, 10, 0.75);
+  transform: translate(0, 0) scale(0);
+  opacity: 0;
+}
+
+/* The face sits above the burst at rest. During the open animation it
+ * rises, tilts back, and fades to expose the cards. */
+.pack-face {
+  position: relative;
+  z-index: 2;
+  border-radius: 8px;
+}
+
+/* Flash overlay — a bright radial wash layered above everything that
+ * briefly whites out the tile at the very end of the open sequence,
+ * masking the route change. */
+.pack-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(255, 255, 230, 0.95) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 10;
+}
+
+/* ---- OPENING SEQUENCE ---- */
+
+/* Override the tilt transform entirely while opening. */
+.pack-opening .card-3d-inner {
+  animation: pack-face-rise 620ms cubic-bezier(0.2, 0.8, 0.2, 1) 80ms 1 forwards;
+}
+@keyframes pack-face-rise {
+  0%   { transform: scale(1) rotateX(0deg) translateY(0); filter: brightness(1); }
+  20%  { transform: scale(1.04) rotateX(-3deg) translateY(-2%); filter: brightness(1.08); }
+  60%  { transform: scale(1.12) rotateX(-10deg) translateY(-6%); filter: brightness(1.2); }
+  100% { transform: scale(1.22) rotateX(-18deg) translateY(-12%); filter: brightness(1.6); opacity: 0.85; }
+}
+
+/* Anticipation jiggle before the rise */
+.pack-opening .pack-face {
+  animation: pack-jiggle 140ms ease-in-out 1;
+}
+@keyframes pack-jiggle {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-1.5deg) translateX(-2px); }
+  55%  { transform: rotate(1.5deg) translateX(2px); }
+  80%  { transform: rotate(-0.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* The lid tears off upward and rotates */
+.pack-opening .pack-lid {
+  animation: pack-lid-tear 540ms cubic-bezier(0.45, 0, 0.75, 0.2) 100ms 1 forwards;
+}
+@keyframes pack-lid-tear {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  30%  { transform: translateY(-20%) rotate(-4deg); opacity: 1; }
+  70%  { transform: translateY(-90%) rotate(-18deg); opacity: 0.9; }
+  100% { transform: translateY(-180%) rotate(-28deg); opacity: 0; }
+}
+.pack-opening .pack-lid-edge {
+  animation: pack-lid-edge-show 280ms ease-out 100ms 1 forwards;
+}
+@keyframes pack-lid-edge-show {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Bottom plate slides down + fades so the cards get an unobstructed burst */
+.pack-opening .pack-bottom-plate {
+  animation: pack-bottom-drop 420ms cubic-bezier(0.4, 0, 0.8, 0.4) 120ms 1 forwards;
+}
+@keyframes pack-bottom-drop {
+  0%   { transform: translateY(0); opacity: 1; }
+  50%  { transform: translateY(20%); opacity: 0.85; }
+  100% { transform: translateY(60%); opacity: 0; }
+}
+
+/* Sticker spins away */
+.pack-opening .pack-sticker {
+  animation: pack-sticker-spin 500ms cubic-bezier(0.3, 0, 0.7, 0.3) 100ms 1 forwards;
+}
+@keyframes pack-sticker-spin {
+  0%   { transform: rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: rotate(540deg) scale(0); opacity: 0; }
+}
+
+/* Mini cards burst — five distinct keyframes so each card has its own
+ * travel vector. Delays are staggered across ~180ms. */
+.pack-opening .pack-burst-card-0 {
+  animation: pack-burst-0 560ms cubic-bezier(0.2, 0.8, 0.2, 1) 180ms 1 forwards;
+}
+.pack-opening .pack-burst-card-1 {
+  animation: pack-burst-1 580ms cubic-bezier(0.2, 0.8, 0.2, 1) 220ms 1 forwards;
+}
+.pack-opening .pack-burst-card-2 {
+  animation: pack-burst-2 600ms cubic-bezier(0.2, 0.8, 0.2, 1) 200ms 1 forwards;
+}
+.pack-opening .pack-burst-card-3 {
+  animation: pack-burst-3 560ms cubic-bezier(0.2, 0.8, 0.2, 1) 240ms 1 forwards;
+}
+.pack-opening .pack-burst-card-4 {
+  animation: pack-burst-4 540ms cubic-bezier(0.2, 0.8, 0.2, 1) 260ms 1 forwards;
+}
+
+@keyframes pack-burst-0 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { transform: translate(-80%, -20%) rotate(-26deg) scale(1.05); opacity: 1; }
+  100% { transform: translate(-140%, -80%) rotate(-38deg) scale(1.25); opacity: 0; }
+}
+@keyframes pack-burst-1 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { transform: translate(-35%, -50%) rotate(-10deg) scale(1.15); opacity: 1; }
+  100% { transform: translate(-60%, -130%) rotate(-16deg) scale(1.35); opacity: 0; }
+}
+@keyframes pack-burst-2 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  25%  { opacity: 1; }
+  55%  { transform: translate(0, -70%) rotate(2deg) scale(1.25); opacity: 1; }
+  100% { transform: translate(0, -160%) rotate(-4deg) scale(1.5); opacity: 0; }
+}
+@keyframes pack-burst-3 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { transform: translate(35%, -50%) rotate(10deg) scale(1.15); opacity: 1; }
+  100% { transform: translate(60%, -130%) rotate(16deg) scale(1.35); opacity: 0; }
+}
+@keyframes pack-burst-4 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { transform: translate(80%, -20%) rotate(26deg) scale(1.05); opacity: 1; }
+  100% { transform: translate(140%, -80%) rotate(38deg) scale(1.25); opacity: 0; }
+}
+
+/* Final flash */
+.pack-opening .pack-flash {
+  animation: pack-flash 360ms ease-out 340ms 1 forwards;
+}
+@keyframes pack-flash {
+  0%   { opacity: 0; }
+  55%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Reduced motion: no animations at all. The onClick handler in PackTile
+ * already navigates immediately when this query matches. */
+@media (prefers-reduced-motion: reduce) {
+  .pack-iridescent,
+  .pack-opening .card-3d-inner,
+  .pack-opening .pack-face,
+  .pack-opening .pack-lid,
+  .pack-opening .pack-lid-edge,
+  .pack-opening .pack-bottom-plate,
+  .pack-opening .pack-sticker,
+  .pack-opening .pack-burst-card,
+  .pack-opening .pack-flash {
+    animation: none !important;
+  }
+}
+
+/* ----------------------------------------------------------------
+ * Scroll-in stagger for route transitions (e.g. /search after a
+ * pack is opened). Add .cards-entrance on the list, cards fade in
+ * and lift up with a small per-item delay.
+ * ----------------------------------------------------------------*/
+.cards-entrance > * {
+  animation: cards-entrance 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cards-entrance > *:nth-child(1)  { animation-delay:   0ms; }
+.cards-entrance > *:nth-child(2)  { animation-delay:  30ms; }
+.cards-entrance > *:nth-child(3)  { animation-delay:  60ms; }
+.cards-entrance > *:nth-child(4)  { animation-delay:  90ms; }
+.cards-entrance > *:nth-child(5)  { animation-delay: 120ms; }
+.cards-entrance > *:nth-child(6)  { animation-delay: 150ms; }
+.cards-entrance > *:nth-child(7)  { animation-delay: 180ms; }
+.cards-entrance > *:nth-child(8)  { animation-delay: 210ms; }
+.cards-entrance > *:nth-child(9)  { animation-delay: 240ms; }
+.cards-entrance > *:nth-child(10) { animation-delay: 270ms; }
+.cards-entrance > *:nth-child(n+11) { animation-delay: 300ms; }
+
+@keyframes cards-entrance {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cards-entrance > * { animation: none !important; }
+}
+
+/* Hide scrollbars on horizontal rails but keep scroll behaviour. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
