@@ -36,11 +36,18 @@ const SPARKLE_RARITIES = new Set([
 ]);
 
 /** Touch engagement constants. */
-const TOUCH_HOLD_MS = 500;      // long-press threshold to engage tilt
-const TOUCH_SLOP_PX = 10;       // finger wiggle tolerated while waiting
+const SWIPE_DECIDE_PX = 8;      // movement needed before we commit to horizontal-swipe vs vertical-scroll
 const TILT_MAX_DEG = 22;        // peak rotateX/rotateY per axis
 const TILT_LIFT_PX = 22;        // translateZ on engage
 const TILT_SCALE = 1.04;        // zoom on engage
+/** Device-orientation tuning. Gyro signal is dampened so the card doesn't
+ *  snap around — held still, the card sits near rest. */
+const GYRO_BETA_NEUTRAL = 45;   // phone held at ~45° feels "flat" in hand
+const GYRO_BETA_RANGE = 30;     // ±deg of beta that map to full tilt
+const GYRO_GAMMA_RANGE = 30;    // ±deg of gamma that map to full tilt
+const GYRO_SMOOTH = 0.82;       // low-pass coefficient
+const GYRO_LIFT_PX = 12;        // gentler lift than a swipe
+const GYRO_SCALE = 1.02;        // gentler zoom than a swipe
 
 type Props = {
   src?: string | null;
@@ -53,8 +60,18 @@ type Props = {
   rarity?: string | null;
   /** Disable the 3D tilt (e.g. for dense table rows). */
   static?: boolean;
+  /** Opt-in on the card detail page: drive tilt from the device gyro when
+   *  the finger isn't swiping. On iOS the user must tap a permission chip. */
+  enableDeviceTilt?: boolean;
   className?: string;
 };
+
+/** iOS Safari exposes a static requestPermission() on the DeviceOrientationEvent constructor. */
+type DeviceOrientationEventIOS = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<"granted" | "denied">;
+};
+
+type TiltPermission = "unknown" | "needed" | "granted" | "denied" | "unsupported";
 
 /** Deterministic PRNG from a string seed so a card's sparkle layout is stable. */
 function seededRand(seed: string): () => number {
@@ -100,6 +117,25 @@ function applyTilt(el: HTMLDivElement, clientX: number, clientY: number) {
   el.style.setProperty("--scale", String(TILT_SCALE));
 }
 
+function applyTiltRaw(
+  el: HTMLDivElement,
+  rx: number,
+  ry: number,
+  lift = TILT_LIFT_PX,
+  scale = TILT_SCALE,
+) {
+  // Drive the holo hotspot from the rotation so the shimmer tracks the tilt
+  // direction (gamma → horizontal, beta → vertical).
+  const mx = 50 + (ry / TILT_MAX_DEG) * 40;
+  const my = 50 - (rx / TILT_MAX_DEG) * 40;
+  el.style.setProperty("--mx", `${mx.toFixed(2)}%`);
+  el.style.setProperty("--my", `${my.toFixed(2)}%`);
+  el.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
+  el.style.setProperty("--ry", `${ry.toFixed(2)}deg`);
+  el.style.setProperty("--lift", `${lift}px`);
+  el.style.setProperty("--scale", String(scale));
+}
+
 function resetTilt(el: HTMLDivElement) {
   el.style.setProperty("--rx", "0deg");
   el.style.setProperty("--ry", "0deg");
@@ -114,11 +150,13 @@ function resetTilt(el: HTMLDivElement) {
  * Interactivity:
  * - Desktop: mousemove drives the tilt + cursor-tracked holo shimmer;
  *   sparkles bloom on :hover.
- * - Mobile: press-and-hold for {@link TOUCH_HOLD_MS}ms without exceeding
- *   {@link TOUCH_SLOP_PX}px of movement engages tilt mode. Subsequent
- *   touchmoves update the tilt and are preventDefault'd to stop scroll.
- *   A short tap or a scroll gesture (>slop within the hold window) leaves
- *   the card alone and lets the page behave normally.
+ * - Mobile (swipe): a horizontal finger movement across the card engages
+ *   tilt and locks vertical page scroll until release. A vertical
+ *   movement-first leaves the card alone and the page scrolls normally.
+ * - Mobile (gyro, opt-in via `enableDeviceTilt`): once permission is
+ *   granted, beta/gamma drive the tilt continuously in a "card in hand"
+ *   resting state. An active swipe overrides gyro; releasing hands the
+ *   tilt back to the gyro.
  */
 export function CardImage({
   src,
@@ -128,14 +166,44 @@ export function CardImage({
   hideBadge = false,
   rarity,
   static: isStatic = false,
+  enableDeviceTilt = false,
   className = "",
 }: Props) {
   const [errored, setErrored] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [tiltPermission, setTiltPermission] =
+    useState<TiltPermission>("unknown");
   const outerRef = useRef<HTMLDivElement | null>(null);
+  const swipeActiveRef = useRef(false);
+  const tiltPermissionRef = useRef<TiltPermission>("unknown");
+  const smoothRxRef = useRef(0);
+  const smoothRyRef = useRef(0);
   const { w, h, sizes } = DIMS[size];
 
   const interactive = !isStatic && size !== "sm";
+  const gyroEligible = interactive && enableDeviceTilt;
+
+  useEffect(() => {
+    tiltPermissionRef.current = tiltPermission;
+  }, [tiltPermission]);
+
+  // Detect device-orientation support + whether an iOS-style permission
+  // prompt is required. Android / desktop Chrome fire the event without
+  // a gate, so we treat those as implicitly granted.
+  useEffect(() => {
+    if (!gyroEligible) return;
+    if (typeof window === "undefined") return;
+    const DOE = (window as unknown as { DeviceOrientationEvent?: DeviceOrientationEventIOS }).DeviceOrientationEvent;
+    if (!DOE) {
+      setTiltPermission("unsupported");
+      return;
+    }
+    if (typeof DOE.requestPermission === "function") {
+      setTiltPermission("needed");
+    } else {
+      setTiltPermission("granted");
+    }
+  }, [gyroEligible]);
 
   // Native touch handlers — React synthesises touchmove as passive, so
   // preventDefault from React's onTouchMove is unreliable. Attach directly.
@@ -146,55 +214,55 @@ export function CardImage({
 
     let startX = 0;
     let startY = 0;
-    let holdTimer: number | null = null;
+    let decided = false;
     let engaged = false;
 
-    const cancelHoldTimer = () => {
-      if (holdTimer !== null) {
-        window.clearTimeout(holdTimer);
-        holdTimer = null;
-      }
-    };
-
     const disengage = () => {
-      cancelHoldTimer();
       if (engaged) {
         engaged = false;
-        el.classList.remove("card-3d-engaged");
-        resetTilt(el);
+        swipeActiveRef.current = false;
+        // If the gyro is driving the card, the next orientation event
+        // will re-apply its own tilt. Otherwise fall back to rest.
+        if (tiltPermissionRef.current !== "granted") {
+          el.classList.remove("card-3d-engaged");
+          resetTilt(el);
+        }
       }
+      decided = false;
     };
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
-      const t = e.touches[0];
-      startX = t.clientX;
-      startY = t.clientY;
-      cancelHoldTimer();
-      holdTimer = window.setTimeout(() => {
-        engaged = true;
-        el.classList.add("card-3d-engaged");
-        applyTilt(el, startX, startY);
-        // Haptic nudge on supported devices so the user knows tilt engaged.
-        if ("vibrate" in navigator) navigator.vibrate?.(8);
-      }, TOUCH_HOLD_MS);
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      decided = false;
+      engaged = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
-      if (engaged) {
-        // Stop the page from scrolling while the user drives the tilt.
-        e.preventDefault();
-        applyTilt(el, t.clientX, t.clientY);
-        return;
-      }
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
-      if (dx * dx + dy * dy > TOUCH_SLOP_PX * TOUCH_SLOP_PX) {
-        // Finger moved before the hold threshold — treat as a scroll,
-        // leave the card alone.
-        cancelHoldTimer();
+      if (!decided) {
+        const adx = Math.abs(dx);
+        const ady = Math.abs(dy);
+        if (adx < SWIPE_DECIDE_PX && ady < SWIPE_DECIDE_PX) return;
+        decided = true;
+        if (adx > ady) {
+          engaged = true;
+          swipeActiveRef.current = true;
+          el.classList.add("card-3d-engaged");
+          if ("vibrate" in navigator) navigator.vibrate?.(6);
+        } else {
+          // Vertical intent — stay out of the way, let the page scroll.
+          return;
+        }
+      }
+      if (engaged) {
+        // Block vertical scroll while the finger drives the tilt.
+        e.preventDefault();
+        applyTilt(el, t.clientX, t.clientY);
       }
     };
 
@@ -204,13 +272,70 @@ export function CardImage({
     el.addEventListener("touchcancel", disengage);
 
     return () => {
-      cancelHoldTimer();
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", disengage);
       el.removeEventListener("touchcancel", disengage);
     };
   }, [interactive]);
+
+  // Attach the device-orientation listener once permission is granted.
+  useEffect(() => {
+    if (!gyroEligible) return;
+    if (tiltPermission !== "granted") return;
+    const el = outerRef.current;
+    if (!el) return;
+
+    smoothRxRef.current = 0;
+    smoothRyRef.current = 0;
+
+    const onOrient = (e: DeviceOrientationEvent) => {
+      // Finger wins. Swipe handler is already applying its own tilt.
+      if (swipeActiveRef.current) return;
+      const beta = e.beta ?? 0;
+      const gamma = e.gamma ?? 0;
+      const nx = Math.max(
+        -1,
+        Math.min(1, (beta - GYRO_BETA_NEUTRAL) / GYRO_BETA_RANGE),
+      );
+      const ny = Math.max(-1, Math.min(1, gamma / GYRO_GAMMA_RANGE));
+      const rxTarget = -nx * TILT_MAX_DEG;
+      const ryTarget = ny * TILT_MAX_DEG;
+      smoothRxRef.current =
+        smoothRxRef.current * GYRO_SMOOTH + rxTarget * (1 - GYRO_SMOOTH);
+      smoothRyRef.current =
+        smoothRyRef.current * GYRO_SMOOTH + ryTarget * (1 - GYRO_SMOOTH);
+      applyTiltRaw(
+        el,
+        smoothRxRef.current,
+        smoothRyRef.current,
+        GYRO_LIFT_PX,
+        GYRO_SCALE,
+      );
+      el.classList.add("card-3d-engaged");
+    };
+
+    window.addEventListener("deviceorientation", onOrient);
+    return () => {
+      window.removeEventListener("deviceorientation", onOrient);
+      // Only reset if the swipe isn't currently owning the transform.
+      if (!swipeActiveRef.current) {
+        el.classList.remove("card-3d-engaged");
+        resetTilt(el);
+      }
+    };
+  }, [gyroEligible, tiltPermission]);
+
+  async function requestTiltPermission() {
+    const DOE = (window as unknown as { DeviceOrientationEvent?: DeviceOrientationEventIOS }).DeviceOrientationEvent;
+    if (!DOE?.requestPermission) return;
+    try {
+      const result = await DOE.requestPermission();
+      setTiltPermission(result === "granted" ? "granted" : "denied");
+    } catch {
+      setTiltPermission("denied");
+    }
+  }
 
   if (!src || errored) {
     return <ImagePlaceholder w={w} h={h} label={alt} className={className} />;
@@ -293,6 +418,17 @@ export function CardImage({
 
       {hovered && isHolo ? (
         <span className="sr-only">Holo shimmer active</span>
+      ) : null}
+
+      {gyroEligible && tiltPermission === "needed" ? (
+        <button
+          type="button"
+          onClick={requestTiltPermission}
+          className="absolute left-1/2 -translate-x-1/2 -bottom-3 z-20 font-display text-[10px] tracking-wider bg-yellow text-ink border-2 border-ink rounded-sm px-2 py-1 shadow-[2px_2px_0_0_var(--color-ink)] active:translate-y-[1px] active:shadow-[1px_1px_0_0_var(--color-ink)]"
+          style={{ transform: "translate(-50%, 0) translateZ(30px)" }}
+        >
+          Tap to enable tilt
+        </button>
       ) : null}
     </div>
   );

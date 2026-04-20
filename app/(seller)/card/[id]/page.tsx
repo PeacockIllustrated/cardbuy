@@ -8,6 +8,11 @@ import { EnergyChip, EnergyCostRow } from "@/components/cardbuy/EnergyChip";
 import { Annotation } from "@/components/wireframe/Annotation";
 import { createClient } from "@/lib/supabase/server";
 import { getMarginConfig } from "@/app/_actions/margins";
+import {
+  getLatestPricesForCard,
+  pickHeadlinePrice,
+} from "@/app/_actions/prices";
+import type { Condition, MockCard } from "@/lib/mock/types";
 
 type Params = Promise<{ id: string }>;
 
@@ -20,10 +25,34 @@ export default async function CardDetailPage({ params }: { params: Params }) {
   const set = setOf(card);
 
   const supabase = await createClient();
-  const [{ data: { user } }, marginConfig] = await Promise.all([
+  const [{ data: { user } }, marginConfig, livePrices] = await Promise.all([
     supabase.auth.getUser(),
     getMarginConfig(),
+    getLatestPricesForCard(id),
   ]);
+
+  // If the nightly sync has covered this card, override the mock USD
+  // baseline with the live TCGplayer market price. Condition
+  // multipliers in the margin config still discount it from there.
+  const headline = await pickHeadlinePrice(livePrices);
+  const liveCard: MockCard = headline?.price_market
+    ? (() => {
+        const live = Number(headline.price_market);
+        const sale = marginConfig.confidence_threshold + 1; // not low-conf
+        const conds: Condition[] = ["NM", "LP", "MP", "HP", "DMG"];
+        const overridden = { ...mockCard.raw_prices };
+        for (const c of conds) {
+          overridden[c] = {
+            market: live,
+            low: Number(headline.price_low ?? live),
+            high: Number(headline.price_high ?? live),
+            sale_count: sale,
+          };
+        }
+        return { ...mockCard, raw_prices: overridden };
+      })()
+    : mockCard;
+  const priceSource: "live" | "mock" = headline?.price_market ? "live" : "mock";
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-4 py-8 flex flex-col gap-8">
@@ -68,6 +97,7 @@ export default async function CardDetailPage({ params }: { params: Params }) {
               size="lg"
               priority
               rarity={card.rarity}
+              enableDeviceTilt
             />
           </div>
 
@@ -150,10 +180,31 @@ export default async function CardDetailPage({ params }: { params: Params }) {
           </header>
 
           <OfferBuilder
-            card={mockCard}
+            card={liveCard}
             config={marginConfig}
             isAuthenticated={Boolean(user)}
           />
+          <p className="text-[11px] text-muted font-display tracking-wider">
+            {priceSource === "live" ? (
+              <>
+                Live price · TCGplayer{" "}
+                <code className="font-mono">
+                  ${Number(headline?.price_market ?? 0).toFixed(2)}
+                </code>{" "}
+                ({headline?.variant}) ·{" "}
+                {headline?.source_updated_at
+                  ? new Date(headline.source_updated_at)
+                      .toISOString()
+                      .slice(0, 10)
+                  : "—"}
+              </>
+            ) : (
+              <>
+                Mock baseline · live TCGplayer feed coverage lands once
+                the sync runs (Phase 2b.2).
+              </>
+            )}
+          </p>
 
           {/* Abilities */}
           {card.abilities && card.abilities.length > 0 ? (

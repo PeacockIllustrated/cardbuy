@@ -37,6 +37,7 @@ export default function AdminLayout({
             </Group>
             <Divider />
             <AdminLink href="/admin/cards" tone="teal">Catalogue</AdminLink>
+            <AdminLink href="/admin/sync" tone="teal">Sync</AdminLink>
             <Divider />
             <AdminLink href="/admin/users" tone="teal">Users</AdminLink>
             <Link
@@ -62,6 +63,7 @@ export default function AdminLayout({
               <MobileLink href="/admin/orders" tone="pink">Orders</MobileLink>
               <MobileSection>Catalogue</MobileSection>
               <MobileLink href="/admin/cards" tone="teal">Cards</MobileLink>
+              <MobileLink href="/admin/sync" tone="teal">Sync</MobileLink>
               <MobileSection>People</MobileSection>
               <MobileLink href="/admin/users" tone="teal">Users</MobileLink>
               <hr className="border-paper-strong/30 my-1" />
