@@ -7,8 +7,8 @@ import {
   type ConditionOfferMap,
 } from "@/components/cardbuy/SubmissionReview";
 import { getAdminSubmission } from "@/app/_actions/admin";
+import { getMarginConfig } from "@/app/_actions/margins";
 import { getMockCardById } from "@/lib/fixtures/mock-adapter";
-import { MOCK_MARGIN_CONFIG } from "@/lib/mock/mock-margin-config";
 import { computeMockOffer } from "@/lib/mock/mock-offer";
 import type {
   Condition,
@@ -41,7 +41,10 @@ export default async function AdminSubmissionDetailPage({
   params: Params;
 }) {
   const { ref } = await params;
-  const result = await getAdminSubmission(ref);
+  const [result, marginConfig] = await Promise.all([
+    getAdminSubmission(ref),
+    getMarginConfig(),
+  ]);
   if (!result) notFound();
 
   const { submission, items, seller } = result;
@@ -97,7 +100,7 @@ export default async function AdminSubmissionDetailPage({
       perCondition[c] = computeMockOffer(
         card,
         { variant: "raw", condition: c },
-        MOCK_MARGIN_CONFIG,
+        marginConfig,
       ).offerGbp;
     }
     offerByCondition[item.id] = perCondition;

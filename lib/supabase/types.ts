@@ -58,6 +58,41 @@ export interface LewisSubmission {
   updated_at: string;
 }
 
+export type Condition = "NM" | "LP" | "MP" | "HP" | "DMG";
+export type Grade = "10" | "9.5" | "9" | "8.5" | "8" | "7";
+
+export type ConditionMultipliers = Record<Condition, number>;
+export type GradeMultipliers = Record<
+  GradingCompany,
+  Partial<Record<Grade, number>>
+>;
+
+export type SetOverride = {
+  set_id: string;
+  set_name: string;
+  margin: number;
+  active: boolean;
+};
+export type RarityOverride = { rarity: string; margin: number; active: boolean };
+
+export interface LewisAdminMargins {
+  id: string;
+  global_margin: number;
+  min_buy_price: number;
+  confidence_threshold: number;
+  condition_multipliers: ConditionMultipliers;
+  grade_multipliers: GradeMultipliers;
+  set_overrides: SetOverride[];
+  rarity_overrides: RarityOverride[];
+  fx_rate_usd_gbp: number;
+  fx_rate_eur_gbp: number;
+  fx_rate_updated_at: string | null;
+  fx_manual_override: boolean;
+  created_at: string;
+  created_by: string | null;
+  change_note: string | null;
+}
+
 export interface LewisSubmissionItem {
   id: string;
   submission_id: string;

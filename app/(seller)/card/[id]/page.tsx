@@ -2,12 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCardById, setOf } from "@/lib/fixtures/cards";
 import { getMockCardById } from "@/lib/fixtures/mock-adapter";
-import { MOCK_MARGIN_CONFIG } from "@/lib/mock/mock-margin-config";
 import { OfferBuilder } from "@/components/cardbuy/OfferBuilder";
 import { CardImage } from "@/components/cardbuy/CardImage";
 import { EnergyChip, EnergyCostRow } from "@/components/cardbuy/EnergyChip";
 import { Annotation } from "@/components/wireframe/Annotation";
 import { createClient } from "@/lib/supabase/server";
+import { getMarginConfig } from "@/app/_actions/margins";
 
 type Params = Promise<{ id: string }>;
 
@@ -20,9 +20,10 @@ export default async function CardDetailPage({ params }: { params: Params }) {
   const set = setOf(card);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [{ data: { user } }, marginConfig] = await Promise.all([
+    supabase.auth.getUser(),
+    getMarginConfig(),
+  ]);
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-4 py-8 flex flex-col gap-8">
@@ -150,7 +151,7 @@ export default async function CardDetailPage({ params }: { params: Params }) {
 
           <OfferBuilder
             card={mockCard}
-            config={MOCK_MARGIN_CONFIG}
+            config={marginConfig}
             isAuthenticated={Boolean(user)}
           />
 
