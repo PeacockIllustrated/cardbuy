@@ -106,27 +106,27 @@ export function ListingCard({ listing, accent = "yellow" }: Props) {
   return (
     <Link
       href={`/shop/${listing.id}`}
-      className="group block pop-block bg-paper-strong rounded-md overflow-hidden"
+      className="group block"
     >
-      <div className="relative bg-paper border-b-[3px] border-ink px-3 pt-5 pb-6 flex justify-center overflow-hidden min-h-[280px]">
-        {/* Pop-art starburst backdrop. Primary burst matches the accent
-            colour and sits dead centre; the two supporting bursts in
-            the complementary brand colours bleed off-edge to give the
-            well a "BAM" comic explosion silhouette. */}
+      {/* Transparent burst well — the section backdrop shows through.
+          Three bursts are enough to read as pop-art without crowding
+          the card; placed asymmetrically so negative space balances
+          the silhouette. */}
+      <div className="relative flex justify-end flex-col items-center pt-4 pb-3 min-h-[290px] overflow-hidden">
         <Burst
           points={BURST_A}
           fill={palette.primary}
-          className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] rotate-[-6deg]"
+          className="left-[-12%] top-[8%] w-[72%] h-[72%] rotate-[-8deg]"
         />
         <Burst
           points={BURST_B}
           fill={palette.secondary}
-          className="right-[-30%] top-[-20%] w-[95%] h-[95%] rotate-[18deg] opacity-95"
+          className="right-[-14%] top-[-6%] w-[54%] h-[54%] rotate-[20deg]"
         />
         <Burst
           points={BURST_C}
           fill={palette.tertiary}
-          className="left-[-25%] bottom-[-15%] w-[80%] h-[80%] rotate-[-22deg] opacity-95"
+          className="right-[-6%] bottom-[6%] w-[40%] h-[40%] rotate-[-14deg]"
         />
 
         <div className="relative z-[1]">
@@ -145,7 +145,7 @@ export function ListingCard({ listing, accent = "yellow" }: Props) {
           ) : null}
         </div>
       </div>
-      <div className="px-3 pb-3 pt-2 flex flex-col gap-1">
+      <div className="pop-block bg-paper-strong rounded-md px-4 pt-3 pb-3 flex flex-col gap-1">
         <div className="font-display text-[13px] md:text-[14px] leading-tight tracking-tight uppercase line-clamp-2 min-h-[28px]">
           {listing.card_name}
         </div>

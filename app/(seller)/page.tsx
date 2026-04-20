@@ -256,7 +256,7 @@ export default async function HomePage({
                   key={l.id}
                   listing={l}
                   compact
-                  accent={(["yellow", "teal", "pink", "yellow"] as const)[i % 4]}
+                  accent={(["yellow", "teal", "yellow", "teal"] as const)[i % 4]}
                 />
               ))}
             </div>
