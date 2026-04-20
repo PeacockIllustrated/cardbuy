@@ -9,6 +9,7 @@ import {
   getSetById,
   getCardCount,
 } from "@/lib/fixtures/cards";
+import { resolveElementalType } from "@/components/cardbuy/particles/recipes";
 import type { Card } from "@/lib/types/card";
 
 /**
@@ -251,14 +252,19 @@ export default async function HomePage({
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-              {featured.map((l, i) => (
-                <ListingCard
-                  key={l.id}
-                  listing={l}
-                  compact
-                  accent={(["yellow", "teal", "yellow", "teal"] as const)[i % 4]}
-                />
-              ))}
+              {featured.map((l, i) => {
+                const card = getCardById(l.card_id);
+                const elementalType = resolveElementalType(card?.types?.[0]);
+                return (
+                  <ListingCard
+                    key={l.id}
+                    listing={l}
+                    compact
+                    accent={(["yellow", "teal", "yellow", "teal"] as const)[i % 4]}
+                    elementalType={elementalType}
+                  />
+                );
+              })}
             </div>
           </div>
         </section>

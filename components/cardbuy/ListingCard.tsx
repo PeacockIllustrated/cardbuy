@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import type { MockListing } from "@/lib/mock/types";
 import { CardImage } from "@/components/cardbuy/CardImage";
 import { formatGBP } from "@/lib/mock/mock-offer";
+import { ParticleField } from "@/components/cardbuy/particles/ParticleField";
+import type { ElementalType } from "@/components/cardbuy/particles/recipes";
 
 type Props = {
   listing: MockListing;
@@ -9,6 +14,10 @@ type Props = {
   compact?: boolean;
   /** Chooses which accent takes the biggest burst layer behind the card. */
   accent?: "pink" | "teal" | "yellow";
+  /** Gen-1 TCG energy type — drives the per-element hover particle
+   *  field. Caller is responsible for looking it up from the card
+   *  catalogue; a null/undefined disables particles for this tile. */
+  elementalType?: ElementalType | null;
 };
 
 /**
@@ -109,7 +118,12 @@ const BURST_PALETTE: Record<
  * layered pop-art starburst well — comic-book "BAM" aesthetic that
  * matches the brand palette.
  */
-export function ListingCard({ listing, accent = "yellow" }: Props) {
+export function ListingCard({
+  listing,
+  accent = "yellow",
+  elementalType,
+}: Props) {
+  const [hovered, setHovered] = useState(false);
   const inStock = listing.qty_in_stock - listing.qty_reserved;
   const soldOut = listing.status === "sold_out" || inStock <= 0;
   const variantLabel =
@@ -123,6 +137,10 @@ export function ListingCard({ listing, accent = "yellow" }: Props) {
     <Link
       href={`/shop/${listing.id}`}
       className="group block"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
     >
       {/* Transparent burst well — the section backdrop shows through.
           One large halo burst sits centred behind the card, one small
@@ -134,17 +152,24 @@ export function ListingCard({ listing, accent = "yellow" }: Props) {
           fill={palette.primary}
           shadow={8}
           strokeWidth={5}
-          className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] h-[92%] rotate-[-10deg]"
+          className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] h-[92%] rotate-[-10deg] transition-transform duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[-16deg] group-hover:scale-[1.06]"
         />
         <Burst
           points={BURST_C}
           fill={palette.secondary}
           shadow={5}
           strokeWidth={5}
-          className="top-[3%] right-[3%] w-[38%] h-[38%] rotate-[22deg]"
+          className="top-[3%] right-[3%] w-[38%] h-[38%] rotate-[22deg] transition-transform duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[40deg] group-hover:scale-[1.18] group-hover:translate-x-[6px] group-hover:-translate-y-[6px]"
         />
 
-        <div className="relative z-[1]">
+        {/* Elemental particle burst — between the bursts and the card so
+            flames/water/leaves read behind the artwork without obscuring
+            the card itself. */}
+        <div className="absolute inset-0 z-[1]">
+          <ParticleField type={elementalType} active={hovered} />
+        </div>
+
+        <div className="relative z-[2]">
           <CardImage
             src={listing.image_url}
             alt={listing.card_name}
