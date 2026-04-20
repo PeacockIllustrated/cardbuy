@@ -60,6 +60,10 @@ type Props = {
   rarity?: string | null;
   /** Disable the 3D tilt (e.g. for dense table rows). */
   static?: boolean;
+  /** Force tilt on even at `sm` size. Use this for compact feature tiles
+   *  that should still lift on hover — the default heuristic turns sm
+   *  off so dense admin tables don't animate. */
+  interactive?: boolean;
   /** Opt-in on the card detail page: drive tilt from the device gyro when
    *  the finger isn't swiping. On iOS the user must tap a permission chip. */
   enableDeviceTilt?: boolean;
@@ -166,6 +170,7 @@ export function CardImage({
   hideBadge = false,
   rarity,
   static: isStatic = false,
+  interactive: interactiveProp,
   enableDeviceTilt = false,
   className = "",
 }: Props) {
@@ -180,7 +185,7 @@ export function CardImage({
   const smoothRyRef = useRef(0);
   const { w, h, sizes } = DIMS[size];
 
-  const interactive = !isStatic && size !== "sm";
+  const interactive = interactiveProp ?? (!isStatic && size !== "sm");
   const gyroEligible = interactive && enableDeviceTilt;
 
   useEffect(() => {
