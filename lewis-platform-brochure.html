@@ -1,0 +1,1976 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lewis's Pokémon Platform · Scope &amp; Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.pokemontcg.io">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* =======================================================================
+   * Lewis's Pokémon Platform · scope brochure (v4 · landscape)
+   * Real card images from pokemontcg.io wrapped in brand sticker frames.
+   * ======================================================================= */
+
+  :root {
+    --ink: #0a0a0a;
+    --paper: #fff8e7;
+    --paper-strong: #ffffff;
+    --pink: #ff4eb8;
+    --teal: #27d3c4;
+    --yellow: #ffe600;
+    --rule: #e8dfc7;
+    --muted: #7a7466;
+    --secondary: #4a4438;
+    --font-display: "Archivo Black", system-ui, sans-serif;
+    --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: #2a2620;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  table, .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Page frame (A4 landscape) ----------
+   * Height budget: 210mm total. Padding 9mm top + 9mm bottom = 18mm.
+   * Content area: 192mm tall × 269mm wide.
+   * Tight budget intentionally — print rules clip at 210mm. */
+  .page {
+    position: relative;
+    width: 297mm;
+    height: 210mm;
+    background: var(--paper);
+    margin: 14px auto;
+    padding: 9mm 14mm 12mm;
+    overflow: hidden;
+    page-break-after: always;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* ---------- Typography ---------- */
+  .display {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 0.9;
+    color: var(--ink);
+  }
+  h1.display { font-size: 78pt; margin: 0; letter-spacing: -0.03em; }
+  h2.display { font-size: 32pt; margin: 0 0 6pt 0; line-height: 0.95; }
+  h3.display { font-size: 16pt; margin: 0 0 5pt 0; }
+  h4.display { font-size: 10pt; margin: 0 0 3pt 0; letter-spacing: 0.02em; }
+
+  p { font-size: 9.5pt; line-height: 1.55; margin: 0 0 7pt 0; color: var(--ink); }
+  .lede { font-size: 11pt; line-height: 1.5; font-weight: 500; max-width: 60ch; }
+  .muted { color: var(--secondary); }
+  .tiny {
+    font-size: 7.5pt;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--secondary);
+    font-weight: 700;
+  }
+
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 14pt; margin: 0 0 6pt 0; }
+  li { font-size: 9.5pt; line-height: 1.5; margin-bottom: 3pt; }
+
+  /* ---------- Primitives ---------- */
+  .pop {
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+  }
+  .pop-sm {
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 0 var(--ink);
+  }
+  .chip {
+    display: inline-block;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7.5pt;
+    letter-spacing: 0.08em;
+    padding: 3pt 7pt;
+    background: var(--ink);
+    color: var(--paper);
+    line-height: 1;
+  }
+
+  /* ---------- Running header / footer ---------- */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 4pt;
+    border-bottom: 1.5px solid var(--ink);
+    margin-bottom: 6pt;
+  }
+  .page-header .wordmark {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 9pt;
+    letter-spacing: 0.04em;
+  }
+  .page-header .section-label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7.5pt;
+    letter-spacing: 0.16em;
+    color: var(--secondary);
+  }
+  .page-footer {
+    position: absolute;
+    left: 14mm; right: 14mm; bottom: 5mm;
+    padding-top: 3pt;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    color: var(--secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  /* ---------- Grid helpers ---------- */
+  .grid { display: grid; gap: 10pt; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+  .stack > * + * { margin-top: 10pt; }
+
+  .center { text-align: center; }
+  .right { text-align: right; }
+  .flex { display: flex; gap: 10pt; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; gap: 14pt; }
+
+  .divider {
+    height: 1.5px;
+    background: var(--ink);
+    margin: 6pt 0;
+  }
+  .hair {
+    height: 1px;
+    background: var(--rule);
+    margin: 5pt 0;
+  }
+
+  /* =======================================================================
+   *  TCG CARD — real pokemontcg.io image wrapped in brand sticker frame.
+   * ======================================================================= */
+  .tcg {
+    --w: 120pt;
+    width: var(--w);
+    aspect-ratio: 5 / 7;
+    position: relative;
+    border: 2.5px solid var(--ink);
+    border-radius: 6pt;
+    box-shadow: 4px 4px 0 0 var(--ink);
+    background: var(--paper-strong);
+    overflow: hidden;
+    display: block;
+  }
+  .tcg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Price sticker (bottom-right) — small brand tag over the card image */
+  .tcg .tag {
+    position: absolute;
+    bottom: 4pt;
+    right: 4pt;
+    background: var(--paper-strong);
+    border: 1.5px solid var(--ink);
+    padding: 2pt 5pt;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 6pt;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    box-shadow: 1.5px 1.5px 0 0 var(--ink);
+    z-index: 2;
+  }
+  .tcg .tag.y { background: var(--yellow); }
+  .tcg .tag.t { background: var(--teal); }
+  .tcg .tag.p { background: var(--pink); color: var(--ink); }
+  /* Optional condition tag (top-left) */
+  .tcg .cond {
+    position: absolute;
+    top: 4pt;
+    left: 4pt;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 1.5pt 4pt;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 5.5pt;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  /* ---- Listing card — mirrors components/cardbuy/ListingCard.tsx ----
+   * Well has a fixed height so images stay proportional to page budget.
+   * Image uses natural aspect (contains inside well), preventing runaway
+   * growth when the cell is wide (5-across on a landscape page). */
+  .listing {
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 0 var(--ink);
+    background: var(--paper-strong);
+    border-radius: 4pt;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .listing .well {
+    border-bottom: 2px solid var(--ink);
+    padding: 5pt;
+    height: 108pt;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--paper-strong);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .listing .well.p { background: var(--pink); }
+  .listing .well.t { background: var(--teal); }
+  .listing .well.y { background: var(--yellow); }
+  .listing .well img {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    display: block;
+    border: 1.5px solid var(--ink);
+    border-radius: 3pt;
+    box-shadow: 2px 2px 0 0 rgba(10, 10, 10, 0.35);
+    background: var(--paper-strong);
+  }
+  .listing .feat {
+    position: absolute;
+    top: 3pt;
+    left: 3pt;
+    background: var(--yellow);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    padding: 1pt 3pt;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 5pt;
+    letter-spacing: 0.08em;
+    transform: rotate(-4deg);
+    z-index: 2;
+    line-height: 1;
+  }
+  .listing .body {
+    padding: 4pt 6pt 5pt;
+    display: flex;
+    flex-direction: column;
+    gap: 1pt;
+  }
+  .listing .body .name {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7.5pt;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    min-height: 8pt;
+  }
+  .listing .body .meta,
+  .listing .body .variant {
+    font-size: 6pt;
+    color: var(--secondary);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .listing .body .price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4pt;
+    padding-top: 2pt;
+    margin-top: 2pt;
+    border-top: 1px solid rgba(10, 10, 10, 0.15);
+  }
+  /* Compact variant for dense rails — shorter well + hides variant line */
+  .listing.compact .well { padding: 3pt; height: 82pt; }
+  .listing.compact .body { padding: 3pt 5pt 4pt; gap: 1pt; }
+  .listing.compact .body .name { font-size: 7pt; min-height: 7pt; }
+  .listing.compact .body .variant { display: none; }
+  .listing.compact .body .meta { font-size: 5.5pt; }
+  .listing.compact .body .price { font-size: 9pt; }
+  .listing.compact .body .stock { font-size: 5.5pt; }
+  .listing .body .price {
+    font-family: var(--font-display);
+    font-size: 10pt;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .listing .body .stock {
+    font-size: 6pt;
+    color: var(--secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Fan layout */
+  .tcg-fan {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 180pt;
+  }
+  .tcg-fan .tcg { --w: 110pt; position: absolute; }
+  .tcg-fan .tcg:nth-child(1) { transform: rotate(-14deg) translateX(-54pt); }
+  .tcg-fan .tcg:nth-child(2) { z-index: 3; transform: translateY(-10pt); }
+  .tcg-fan .tcg:nth-child(3) { transform: rotate(14deg) translateX(54pt); }
+
+  /* =======================================================================
+   *  APP MOCKS
+   * ======================================================================= */
+  .mock {
+    border: 2.5px solid var(--ink);
+    box-shadow: 5px 5px 0 0 var(--ink);
+    background: var(--paper-strong);
+    overflow: hidden;
+    border-radius: 4pt;
+  }
+  .mock-bar {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 3pt 8pt;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.12em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .mock-bar .dots { display: flex; gap: 3pt; }
+  .mock-bar .dot { width: 5pt; height: 5pt; border-radius: 50%; background: var(--paper); opacity: 0.4; }
+
+  /* --- Homepage mock --- */
+  .hp-brand {
+    background: var(--yellow);
+    border-bottom: 2px solid var(--ink);
+    padding: 8pt 12pt;
+    display: grid;
+    grid-template-columns: 38pt 1fr auto;
+    gap: 10pt;
+    align-items: center;
+  }
+  .hp-logo {
+    width: 38pt; height: 38pt;
+    background: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 3pt;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .hp-logo::before {
+    content: "";
+    position: absolute;
+    inset: -4pt;
+    background: var(--pink);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    z-index: -1;
+  }
+  .hp-logo::after {
+    content: "L";
+    font-family: var(--font-display);
+    font-size: 20pt;
+    color: var(--yellow);
+    line-height: 1;
+  }
+  .hp-wordmark {
+    font-family: var(--font-display);
+    font-size: 16pt;
+    line-height: 0.9;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+  .hp-tag {
+    font-size: 7pt;
+    margin-top: 2pt;
+    color: var(--secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .hp-chips { display: flex; gap: 4pt; }
+  .hp-chips span {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 6pt;
+    letter-spacing: 0.08em;
+    padding: 2pt 5pt;
+    border: 1.5px solid var(--ink);
+    background: var(--paper-strong);
+  }
+
+  .hp-duo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8pt;
+    padding: 10pt;
+  }
+  .hp-duo > div {
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 0 var(--ink);
+    border-radius: 4pt;
+    padding: 8pt 10pt;
+    min-height: 66pt;
+    display: flex;
+    flex-direction: column;
+    gap: 3pt;
+  }
+  .hp-duo .sell { background: var(--yellow); }
+  .hp-duo .buy  { background: var(--teal); }
+  .hp-duo .chip-sm {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 6pt;
+    letter-spacing: 0.06em;
+    background: var(--ink); color: var(--paper);
+    padding: 1.5pt 4pt;
+    width: fit-content;
+  }
+  .hp-duo h4 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 10.5pt;
+    line-height: 0.95;
+    margin: 0;
+  }
+  .hp-duo p { font-size: 7pt; margin: 0; line-height: 1.4; }
+  .hp-duo .cta {
+    margin-top: auto;
+    background: var(--paper-strong);
+    border: 1.5px solid var(--ink);
+    padding: 3pt 6pt;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 6.5pt;
+    letter-spacing: 0.06em;
+    width: fit-content;
+  }
+
+  .hp-rail {
+    background: var(--pink);
+    border-top: 2px solid var(--ink);
+    padding: 8pt 10pt;
+  }
+  .hp-rail .rail-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    color: var(--paper-strong);
+    font-size: 10pt;
+    margin-bottom: 5pt;
+  }
+  .hp-rail .rail-head .more {
+    font-size: 6.5pt;
+    letter-spacing: 0.1em;
+    border-bottom: 1.5px solid var(--paper-strong);
+    padding-bottom: 1pt;
+  }
+  .hp-rail-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6pt;
+  }
+
+  .hp-stats {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8pt 12pt;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6pt;
+  }
+  .hp-stats .stat .n {
+    font-family: var(--font-display);
+    font-size: 14pt;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .hp-stats .stat .l {
+    font-family: var(--font-display);
+    font-size: 5.5pt;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 2pt;
+    opacity: 0.8;
+  }
+  .hp-stats .y { color: var(--yellow); }
+  .hp-stats .t { color: var(--teal); }
+  .hp-stats .p { color: var(--pink); }
+
+  /* --- Shop mock --- */
+  .shop-mock { padding: 8pt 10pt; }
+  .shop-feat {
+    background: var(--yellow);
+    border: 2px solid var(--ink);
+    padding: 6pt 8pt;
+    margin-bottom: 8pt;
+  }
+  .shop-feat-label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 6.5pt;
+    letter-spacing: 0.12em;
+    margin-bottom: 4pt;
+  }
+  .shop-feat-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5pt;
+  }
+  .shop-grid {
+    display: grid;
+    grid-template-columns: 72pt 1fr;
+    gap: 8pt;
+  }
+  .shop-filters {
+    font-size: 7pt;
+    line-height: 1.5;
+  }
+  .shop-filters .filter-row {
+    padding: 3pt 0;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+  }
+  .shop-listings {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5pt;
+  }
+
+  /* --- Admin dashboard mock --- */
+  .admin-mock { padding: 8pt 10pt; }
+  .admin-nav {
+    display: flex;
+    gap: 8pt;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.08em;
+    border-bottom: 1.5px solid var(--ink);
+    padding-bottom: 4pt;
+    margin-bottom: 7pt;
+  }
+  .admin-nav .active {
+    background: var(--ink); color: var(--paper);
+    padding: 2pt 4pt;
+  }
+  .admin-tiles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6pt;
+    margin-bottom: 8pt;
+  }
+  .admin-tile {
+    border: 2px solid var(--ink);
+    box-shadow: 2.5px 2.5px 0 0 var(--ink);
+    padding: 6pt 8pt;
+  }
+  .admin-tile .n {
+    font-family: var(--font-display);
+    font-size: 16pt;
+    line-height: 1;
+  }
+  .admin-tile .l {
+    font-family: var(--font-display);
+    font-size: 6pt;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 3pt;
+  }
+  .admin-table { font-size: 7.5pt; }
+  .admin-row {
+    display: grid;
+    grid-template-columns: 16pt 1fr 48pt 36pt 50pt;
+    gap: 6pt;
+    padding: 3pt 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: center;
+  }
+  .admin-row.head {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 6pt;
+    letter-spacing: 0.08em;
+    border-bottom: 1.5px solid var(--ink);
+    color: var(--secondary);
+  }
+  .admin-row .ref {
+    font-family: var(--font-display);
+    font-size: 7pt;
+    letter-spacing: 0.02em;
+  }
+  .admin-row .status {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 5.5pt;
+    letter-spacing: 0.06em;
+    border: 1.5px solid var(--ink);
+    padding: 1.5pt 3pt;
+    text-align: center;
+  }
+  .admin-row .s-t { background: var(--teal); }
+  .admin-row .s-p { background: var(--pink); }
+  .admin-row .s-y { background: var(--yellow); }
+
+  /* =======================================================================
+   *  COMPONENTS
+   * ======================================================================= */
+  .feature {
+    padding: 10pt;
+    background: var(--paper-strong);
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+  }
+  .metric {
+    padding: 10pt;
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+    background: var(--paper-strong);
+  }
+  .metric .n {
+    font-family: var(--font-display);
+    font-size: 26pt;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .metric .l {
+    font-family: var(--font-sans);
+    font-size: 8.5pt;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-top: 4pt;
+  }
+
+  /* ---------- Architecture diagram ---------- */
+  .arch-h {
+    background: var(--paper-strong);
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+    padding: 10pt 12pt;
+    display: grid;
+    grid-template-columns: 1fr 20pt 1fr 20pt 1fr;
+    align-items: center;
+    gap: 6pt;
+  }
+  .arch-h .cluster { display: grid; gap: 6pt; }
+  .arch-node {
+    border: 2px solid var(--ink);
+    padding: 6pt 8pt;
+    text-align: center;
+    background: var(--paper);
+    box-shadow: 2.5px 2.5px 0 0 var(--ink);
+  }
+  .arch-node .title {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 8pt;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+  .arch-node .sub { font-size: 6.5pt; color: var(--secondary); line-height: 1.35; margin-top: 2pt; }
+  .arch-node.yellow { background: var(--yellow); }
+  .arch-node.teal { background: var(--teal); }
+  .arch-node.pink { background: var(--pink); }
+  .arch-node.ink { background: var(--ink); color: var(--paper); }
+  .arch-node.ink .sub { color: #cdbda0; }
+  .arch-arrow-h {
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 18pt;
+    line-height: 0.8;
+  }
+  .arch-arrow-h::before { content: "→"; }
+
+  /* ---------- Formula ---------- */
+  .formula-frame {
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+    background: var(--paper-strong);
+    padding: 10pt 14pt;
+  }
+  .formula-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4pt 6pt;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-size: 10pt;
+    line-height: 1.4;
+  }
+  .formula-row .lhs { font-size: 12pt; margin-right: 4pt; }
+  .formula-row .eq  { font-size: 12pt; }
+  .formula-row .x   { font-size: 10pt; color: var(--secondary); }
+  .pill {
+    display: inline-block;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 8.5pt;
+    letter-spacing: 0.04em;
+    padding: 3pt 7pt;
+    border: 1.5px solid var(--ink);
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .pill-src   { background: var(--teal); }
+  .pill-fx    { background: var(--yellow); }
+  .pill-mult  { background: var(--paper); }
+  .pill-dial  { background: var(--pink); }
+  .formula-key {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6pt;
+    margin-top: 8pt;
+    font-size: 7.5pt;
+  }
+  .formula-key strong {
+    display: block;
+    color: var(--ink);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.06em;
+  }
+  .formula-key div { color: var(--secondary); line-height: 1.4; margin-top: 2pt; }
+
+  /* ---------- Comparison table ---------- */
+  table.compare {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2.5px solid var(--ink);
+    background: var(--paper-strong);
+    box-shadow: 4px 4px 0 0 var(--ink);
+  }
+  table.compare th, table.compare td {
+    padding: 6pt 8pt;
+    text-align: left;
+    border-bottom: 1px solid var(--ink);
+    font-size: 8.5pt;
+    line-height: 1.4;
+    vertical-align: top;
+  }
+  table.compare tr:last-child td { border-bottom: none; }
+  table.compare th {
+    background: var(--ink); color: var(--paper);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7.5pt;
+    letter-spacing: 0.06em;
+    border-bottom: none;
+  }
+  table.compare td:first-child {
+    font-weight: 600;
+    width: 28%;
+    border-right: 1px solid var(--ink);
+  }
+  table.compare td.good { background: #eaf9f5; }
+  table.compare td.bad  { background: #fff1f1; }
+  table.compare td.accent { background: var(--yellow); font-weight: 700; }
+
+  /* ---------- Horizontal timeline ---------- */
+  .timeline-h {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10pt;
+  }
+  .timeline-h .step {
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+    padding: 10pt;
+    background: var(--paper-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 5pt;
+  }
+  .timeline-h .step .phase {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 7pt;
+    letter-spacing: 0.1em;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 2pt 5pt;
+    width: fit-content;
+  }
+  .timeline-h .step h4 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 11pt;
+    line-height: 0.95;
+    margin: 0;
+  }
+  .timeline-h .step p { font-size: 8pt; margin: 0; line-height: 1.4; }
+  .timeline-h .step.y { background: var(--yellow); }
+  .timeline-h .step.t { background: var(--teal); }
+  .timeline-h .step.p { background: var(--pink); }
+
+  /* ---------- Cover (landscape) ---------- */
+  .cover { padding: 0; display: grid; grid-template-columns: 1.1fr 1fr; min-height: 210mm; }
+  .cover-left {
+    background: var(--paper);
+    padding: 20mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 2.5px solid var(--ink);
+    position: relative;
+  }
+  .cover-left .sub {
+    font-size: 8.5pt;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--secondary);
+    font-weight: 700;
+    margin-bottom: 14pt;
+  }
+  .cover-left h1 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    line-height: 0.85;
+    letter-spacing: -0.03em;
+    font-size: 70pt;
+    margin: 0;
+  }
+  .cover-left h1 .amp { color: var(--pink); }
+  .cover-left .sell {
+    display: inline-block;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 4pt 10pt;
+    font-family: var(--font-display);
+    font-size: 9pt;
+    letter-spacing: 0.14em;
+    margin-top: 18pt;
+    width: fit-content;
+  }
+  .cover-left .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10pt;
+    padding-top: 14pt;
+    border-top: 1.5px solid var(--ink);
+  }
+  .cover-left .meta .l {
+    font-family: var(--font-display);
+    font-size: 7pt;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--secondary);
+  }
+  .cover-left .meta .v {
+    font-family: var(--font-display);
+    font-size: 11pt;
+    text-transform: uppercase;
+    margin-top: 3pt;
+  }
+
+  .cover-right {
+    background: var(--yellow);
+    position: relative;
+    overflow: hidden;
+    padding: 20mm;
+  }
+  .cover-right::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(var(--ink) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+    opacity: 0.08;
+  }
+  .cover-cards {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+  }
+  .cover-cards .tcg { position: absolute; }
+  .cover-cards .tcg:nth-child(1) { --w: 60mm; left: 0;    top: 6mm;   transform: rotate(-14deg); }
+  .cover-cards .tcg:nth-child(2) { --w: 66mm; left: 40mm; top: 34mm;  transform: rotate(-2deg); z-index: 3; }
+  .cover-cards .tcg:nth-child(3) { --w: 58mm; left: 82mm; top: 12mm;  transform: rotate(12deg); z-index: 2; }
+  .cover-cards .tcg:nth-child(4) { --w: 54mm; left: 14mm; top: 102mm; transform: rotate(8deg);  z-index: 2; }
+  .cover-cards .tcg:nth-child(5) { --w: 56mm; left: 66mm; top: 108mm; transform: rotate(-8deg); }
+
+  /* ---------- Print ---------- */
+  @media print {
+    html, body {
+      background: var(--paper);
+      margin: 0;
+      padding: 0;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+    .page {
+      margin: 0;
+      box-shadow: none;
+      width: 297mm;
+      height: 210mm;
+      max-height: 210mm;
+      overflow: hidden;
+      page-break-after: always;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .page:last-child { page-break-after: auto; }
+    @page { size: 297mm 210mm; margin: 0; }
+    * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+
+  /* Print button — hidden on print */
+  .print-floater {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 100;
+    background: var(--pink);
+    border: 2.5px solid var(--ink);
+    box-shadow: 4px 4px 0 0 var(--ink);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 11pt;
+    letter-spacing: 0.04em;
+    padding: 8pt 14pt;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .print-floater:hover { box-shadow: 6px 6px 0 0 var(--ink); transform: translate(-1px,-1px); }
+  @media print { .print-floater { display: none; } }
+</style>
+</head>
+<body>
+
+<button class="print-floater" onclick="window.print()">Save as PDF</button>
+
+<!-- ======================================================================
+     PAGE 1 · COVER
+====================================================================== -->
+<section class="page cover">
+  <div class="cover-left">
+    <div>
+      <div class="sub">Scope &amp; Design · April 2026</div>
+      <h1>
+        Lewis's<br/>
+        Pokémon<br/>
+        Platform<span class="amp">.</span>
+      </h1>
+      <div class="sell">A bespoke proposal by Tom.Peacock.Design</div>
+    </div>
+    <div class="meta">
+      <div><div class="l">Prepared for</div><div class="v">Lewis</div></div>
+      <div><div class="l">Status</div><div class="v">Draft · for sign-off</div></div>
+      <div><div class="l">By</div><div class="v">Tom.Peacock.Design</div></div>
+    </div>
+  </div>
+
+  <div class="cover-right">
+    <div class="cover-cards">
+      <div class="tcg">
+        <img src="https://images.pokemontcg.io/base1/4.png" alt="Charizard · Base Set · Holographic Rare" />
+        <span class="cond">HOLO · NM</span>
+      </div>
+      <div class="tcg">
+        <img src="https://images.pokemontcg.io/basep/8.png" alt="Mew · Wizards Black Star Promo" />
+        <span class="cond">PROMO</span>
+      </div>
+      <div class="tcg">
+        <img src="https://images.pokemontcg.io/base1/2.png" alt="Blastoise · Base Set · Holographic Rare" />
+        <span class="cond">HOLO · NM</span>
+      </div>
+      <div class="tcg">
+        <img src="https://images.pokemontcg.io/base1/58.png" alt="Pikachu · Base Set · Common" />
+        <span class="cond">NM</span>
+      </div>
+      <div class="tcg">
+        <img src="https://images.pokemontcg.io/base1/15.png" alt="Venusaur · Base Set · Holographic Rare" />
+        <span class="cond">HOLO · NM</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================================
+     PAGE 2 · AT A GLANCE
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">01 · At a glance</span>
+  </div>
+
+  <div class="grid" style="grid-template-columns: 1.2fr 1fr; gap: 24pt; margin-top: 4pt;">
+    <div>
+      <span class="chip">What we're building</span>
+      <h2 class="display" style="margin-top: 8pt; font-size: 44pt;">One shop.<br/>Two directions.</h2>
+      <p class="lede muted" style="margin-top: 8pt;">
+        A bespoke platform that lets customers sell cards to you and buy
+        cards from you — running from a single admin panel that you control.
+      </p>
+
+      <div class="divider"></div>
+
+      <div class="grid grid-3">
+        <div class="feature" style="background: var(--yellow);">
+          <span class="tiny">01</span>
+          <h3 class="display" style="margin-top: 3pt;">Buylist</h3>
+          <p style="font-size: 8.5pt;">Instant offers. Posted in. Paid out. No email threads.</p>
+        </div>
+        <div class="feature" style="background: var(--teal);">
+          <span class="tiny">02</span>
+          <h3 class="display" style="margin-top: 3pt;">Shopfront</h3>
+          <p style="font-size: 8.5pt;">Your curated stock, per unit, with a real checkout.</p>
+        </div>
+        <div class="feature" style="background: var(--pink);">
+          <span class="tiny">03</span>
+          <h3 class="display" style="margin-top: 3pt;">Admin</h3>
+          <p style="font-size: 8.5pt;">Every margin, price, and feature slot — a dial you turn.</p>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <span class="chip">Inside this document</span>
+      <div class="grid grid-2" style="margin-top: 8pt; font-size: 9pt; gap: 4pt 16pt;">
+        <div>01 · The platform preview</div>
+        <div>06 · Pricing formula &amp; dials</div>
+        <div>02 · Two flows, one spine</div>
+        <div>07 · Your admin dashboard</div>
+        <div>03 · Seller journey</div>
+        <div>08 · Why APIs beat off-the-shelf</div>
+        <div>04 · Buyer journey</div>
+        <div>09 · Build phases</div>
+        <div>05 · Data engine — three APIs</div>
+        <div>10 · Approval</div>
+      </div>
+    </div>
+
+    <div class="tcg-fan">
+      <div class="tcg"><img src="https://images.pokemontcg.io/base1/4.png" alt="Charizard" /><span class="tag p">Charizard</span></div>
+      <div class="tcg"><img src="https://images.pokemontcg.io/basep/8.png" alt="Mew" /><span class="tag y">Mew · Promo</span></div>
+      <div class="tcg"><img src="https://images.pokemontcg.io/base1/2.png" alt="Blastoise" /><span class="tag t">Blastoise</span></div>
+    </div>
+  </div>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>02</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 3 · THE PLATFORM (homepage mock)
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">02 · The platform</span>
+  </div>
+
+  <div class="flex-between" style="margin-bottom: 8pt;">
+    <div>
+      <span class="chip">Homepage preview</span>
+      <h2 class="display" style="margin-top: 6pt;">Your front door.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 54ch; margin: 0;">
+      Two CTAs above the fold · featured picks · live stats. Every pixel
+      reads <em>Lewis</em>, not a template.
+    </p>
+  </div>
+
+  <div class="mock">
+    <div class="mock-bar">
+      <span>lewis's pokémon · /</span>
+      <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+
+    <div class="hp-brand">
+      <div class="hp-logo"></div>
+      <div>
+        <div class="hp-wordmark">Lewis's Pokémon</div>
+        <div class="hp-tag">Buy · Sell · Repeat · UK · GBP</div>
+      </div>
+      <div class="hp-chips">
+        <span>UK · GBP</span>
+        <span>Single-merchant</span>
+        <span>Est. TBC</span>
+      </div>
+    </div>
+
+    <div class="hp-duo">
+      <div class="sell">
+        <span class="chip-sm">Sell to us</span>
+        <h4>Get an instant offer for your Pokémon cards.</h4>
+        <p>Search the buylist, pick the condition, see your offer in GBP.</p>
+        <span class="cta">Get offer →</span>
+      </div>
+      <div class="buy">
+        <span class="chip-sm">Buy from us</span>
+        <h4>Hand-picked singles, slabs and sealed.</h4>
+        <p>Lewis curates every listing. Free tracked Royal Mail over £250.</p>
+        <span class="cta">Browse the shop →</span>
+      </div>
+    </div>
+
+    <div class="hp-rail">
+      <div class="rail-head">
+        <span>Lewis's picks this week</span>
+        <span class="more">View all →</span>
+      </div>
+      <div class="hp-rail-row">
+        <div class="listing compact">
+          <div class="well y"><span class="feat">Featured</span><img src="https://images.pokemontcg.io/base1/4.png" alt="Charizard" /></div>
+          <div class="body">
+            <div class="name">Charizard</div>
+            <div class="meta">Base · Rare Holo</div>
+            <div class="variant">Raw · NM</div>
+            <div class="price-row"><span class="price">£248</span><span class="stock">1 in stock</span></div>
+          </div>
+        </div>
+        <div class="listing compact">
+          <div class="well t"><img src="https://images.pokemontcg.io/base1/6.png" alt="Gyarados" /></div>
+          <div class="body">
+            <div class="name">Gyarados</div>
+            <div class="meta">Base · Rare · LP</div>
+            <div class="price-row"><span class="price">£22</span><span class="stock">2</span></div>
+          </div>
+        </div>
+        <div class="listing compact">
+          <div class="well p"><span class="feat">Featured</span><img src="https://images.pokemontcg.io/basep/8.png" alt="Mew" /></div>
+          <div class="body">
+            <div class="name">Mew</div>
+            <div class="meta">Promo · PSA 9</div>
+            <div class="price-row"><span class="price">£310</span><span class="stock">1</span></div>
+          </div>
+        </div>
+        <div class="listing compact">
+          <div class="well y"><img src="https://images.pokemontcg.io/base1/2.png" alt="Blastoise" /></div>
+          <div class="body">
+            <div class="name">Blastoise</div>
+            <div class="meta">Base · Holo · NM</div>
+            <div class="price-row"><span class="price">£138</span><span class="stock">1</span></div>
+          </div>
+        </div>
+        <div class="listing compact">
+          <div class="well t"><img src="https://images.pokemontcg.io/base1/58.png" alt="Pikachu" /></div>
+          <div class="body">
+            <div class="name">Pikachu</div>
+            <div class="meta">Base · Common · NM</div>
+            <div class="price-row"><span class="price">£22</span><span class="stock">4</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hp-stats">
+      <div class="stat"><div class="n y">£128,402</div><div class="l">Paid out to sellers</div></div>
+      <div class="stat"><div class="n y">14,213</div><div class="l">Cards bought</div></div>
+      <div class="stat"><div class="n t">9,476</div><div class="l">Cards sold</div></div>
+      <div class="stat"><div class="n p">3.2 days</div><div class="l">Average payout</div></div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 10pt; font-size: 9pt; max-width: 120ch;">
+    <strong>Why this matters:</strong> most UK sellers bury their buylist behind a
+    contact form. On your site, it's the first thing a visitor sees — and it
+    speaks GBP instantly, not <em>"we'll get back to you."</em>
+  </p>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>03</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 4 · TWO FLOWS
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">03 · Two flows</span>
+  </div>
+
+  <div class="flex-between">
+    <div>
+      <span class="chip">The architecture</span>
+      <h2 class="display" style="margin-top: 6pt;">Two flows. One catalogue.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      Buy-in and sell-out share one spine — <strong>cb_cards</strong>. Every
+      Charizard on the site is <em>the same</em> Charizard. No re-entry, no
+      duplicate listings, no price drift.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 14pt;">
+    <div class="pop" style="background: var(--yellow); padding: 12pt; border-radius: 4pt;">
+      <span class="chip">A · Buylist</span>
+      <h3 class="display" style="margin-top: 6pt; font-size: 20pt;">They sell to you.</h3>
+      <p style="font-size: 9pt;">Customer builds a submission, sees an instant offer, posts cards in, gets paid on verify.</p>
+      <div class="hair"></div>
+      <ul>
+        <li>Instant GBP offer — no reply window</li>
+        <li>Royal Mail label generated as PDF</li>
+        <li>Payout by PayPal or +10% trade credit</li>
+        <li>Reference · <strong>CB-2026-000042</strong></li>
+      </ul>
+    </div>
+
+    <div class="pop" style="background: var(--teal); padding: 12pt; border-radius: 4pt;">
+      <span class="chip">B · Shopfront</span>
+      <h3 class="display" style="margin-top: 6pt; font-size: 20pt;">You sell to them.</h3>
+      <p style="font-size: 9pt;">You list stock per unit with photos. Customer browses, baskets, checks out with Stripe.</p>
+      <div class="hair"></div>
+      <ul>
+        <li>Per-listing price (every unit has its SKU)</li>
+        <li>Condition &amp; grade on every card</li>
+        <li>Featured rail you curate by hand</li>
+        <li>Apple Pay · Google Pay · card</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="margin-top: 12pt;">
+    <div class="arch-h">
+      <div class="cluster">
+        <div class="arch-node yellow"><div class="title">Seller</div><div class="sub">Builds a submission</div></div>
+        <div class="arch-node teal"><div class="title">Buyer</div><div class="sub">Browses your inventory</div></div>
+      </div>
+      <div class="arch-arrow-h"></div>
+      <div class="cluster">
+        <div class="arch-node ink">
+          <div class="title">cb_cards · the spine</div>
+          <div class="sub">20,000+ canonical Pokémon cards · one source, one ID, both flows</div>
+        </div>
+      </div>
+      <div class="arch-arrow-h"></div>
+      <div class="cluster">
+        <div class="arch-node pink"><div class="title">cb_submissions</div><div class="sub">Quoted · shipped · verified · paid</div></div>
+        <div class="arch-node pink"><div class="title">cb_listings</div><div class="sub">Stock units · per-SKU prices</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>04</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 5 · SELLER JOURNEY
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">04 · Seller journey</span>
+  </div>
+
+  <div class="flex-between">
+    <div>
+      <span class="chip">The sell-in flow</span>
+      <h2 class="display" style="margin-top: 6pt;">Five minutes. Zero emails.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      The instant-offer experience is what earns the repeat customer.
+      Everything else is scaffolding around it.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid grid-5">
+    <div class="feature" style="background: var(--yellow);">
+      <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">01</div>
+      <h4 class="display">Search</h4>
+      <p style="font-size: 8pt;">Type a card name. Autocomplete lists every variant in every set.</p>
+    </div>
+    <div class="feature">
+      <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">02</div>
+      <h4 class="display">Add</h4>
+      <p style="font-size: 8pt;">Pick condition. Card joins a running submission with live total.</p>
+    </div>
+    <div class="feature" style="background: var(--pink);">
+      <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">03</div>
+      <h4 class="display">Offer</h4>
+      <p style="font-size: 8pt;">Total offer appears — cash or +10% trade credit. Frozen for 7 days on accept.</p>
+    </div>
+    <div class="feature">
+      <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">04</div>
+      <h4 class="display">Ship</h4>
+      <p style="font-size: 8pt;">Royal Mail label emailed as PDF. Tracking auto-updates status.</p>
+    </div>
+    <div class="feature" style="background: var(--teal);">
+      <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">05</div>
+      <h4 class="display">Paid</h4>
+      <p style="font-size: 8pt;">You verify. One click. PayPal Payouts does the rest.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid" style="grid-template-columns: 1fr 160pt; gap: 18pt; align-items: center;">
+    <div>
+      <h3 class="display" style="font-size: 20pt;">Worked example · the Gyarados Lewis just bought.</h3>
+      <p>
+        Aisha lists her old Base-set Gyarados at Near Mint. The formula returns
+        <strong>£26.40</strong>. She accepts; the offer freezes for seven days;
+        her Royal Mail label appears in her inbox. Card posted Monday — PayPal
+        pings her Thursday. No email tennis, no haggling.
+      </p>
+      <div class="hair"></div>
+      <p class="muted" style="font-size: 9pt;">
+        <strong>Average end-to-end:</strong> card posted Monday, seller paid
+        Thursday. Both sides like it that way.
+      </p>
+    </div>
+    <div class="tcg" style="--w: 150pt; margin: 0 auto; transform: rotate(-4deg);">
+      <img src="https://images.pokemontcg.io/base1/6.png" alt="Gyarados · Base Set" />
+      <span class="cond">NM</span>
+      <span class="tag y">£26.40</span>
+    </div>
+  </div>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>05</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 6 · BUYER JOURNEY
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">05 · Buyer journey</span>
+  </div>
+
+  <div class="flex-between" style="margin-bottom: 8pt;">
+    <div>
+      <span class="chip">The sell-out flow</span>
+      <h2 class="display" style="margin-top: 6pt;">The shopfront.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      Featured at the top · filters that stick · real photography · Stripe
+      checkout with Apple Pay and Google Pay built-in.
+    </p>
+  </div>
+
+  <div class="mock">
+    <div class="mock-bar">
+      <span>lewis's pokémon · /shop</span>
+      <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+    <div class="shop-mock">
+      <div class="shop-feat">
+        <div class="shop-feat-label">Featured this week · 5 picks</div>
+        <div class="shop-feat-row">
+          <div class="listing compact">
+            <div class="well p"><span class="feat">Featured</span><img src="https://images.pokemontcg.io/base1/4.png" alt="Charizard" /></div>
+            <div class="body">
+              <div class="name">Charizard</div>
+              <div class="meta">Holo · PSA 9</div>
+              <div class="price-row"><span class="price">£540</span><span class="stock">1</span></div>
+            </div>
+          </div>
+          <div class="listing compact">
+            <div class="well p"><span class="feat">Featured</span><img src="https://images.pokemontcg.io/basep/8.png" alt="Mew" /></div>
+            <div class="body">
+              <div class="name">Mew</div>
+              <div class="meta">Promo · NM</div>
+              <div class="price-row"><span class="price">£310</span><span class="stock">1</span></div>
+            </div>
+          </div>
+          <div class="listing compact">
+            <div class="well"><img src="https://images.pokemontcg.io/base1/2.png" alt="Blastoise" /></div>
+            <div class="body">
+              <div class="name">Blastoise</div>
+              <div class="meta">Holo · NM</div>
+              <div class="price-row"><span class="price">£138</span><span class="stock">1</span></div>
+            </div>
+          </div>
+          <div class="listing compact">
+            <div class="well"><img src="https://images.pokemontcg.io/base1/15.png" alt="Venusaur" /></div>
+            <div class="body">
+              <div class="name">Venusaur</div>
+              <div class="meta">Holo · LP</div>
+              <div class="price-row"><span class="price">£95</span><span class="stock">1</span></div>
+            </div>
+          </div>
+          <div class="listing compact">
+            <div class="well"><img src="https://images.pokemontcg.io/base1/1.png" alt="Alakazam" /></div>
+            <div class="body">
+              <div class="name">Alakazam</div>
+              <div class="meta">Holo · NM</div>
+              <div class="price-row"><span class="price">£72</span><span class="stock">2</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shop-grid">
+        <div class="shop-filters">
+          <div class="shop-feat-label" style="margin-bottom: 4pt;">Filter</div>
+          <div class="filter-row"><span>Set</span><span>Base</span></div>
+          <div class="filter-row"><span>Rarity</span><span>All</span></div>
+          <div class="filter-row"><span>Condition</span><span>NM</span></div>
+          <div class="filter-row"><span>Grade</span><span>—</span></div>
+          <div class="filter-row"><span>Price</span><span>£0–£50</span></div>
+          <div class="filter-row"><span>In stock</span><span>Yes</span></div>
+        </div>
+        <div class="shop-listings">
+          <div class="listing">
+            <div class="well"><img src="https://images.pokemontcg.io/base1/29.png" alt="Haunter" /></div>
+            <div class="body"><div class="name">Haunter</div><div class="meta">Base · Uncommon · NM</div><div class="price-row"><span class="price">£9</span><span class="stock">3</span></div></div>
+          </div>
+          <div class="listing">
+            <div class="well"><img src="https://images.pokemontcg.io/base1/17.png" alt="Beedrill" /></div>
+            <div class="body"><div class="name">Beedrill</div><div class="meta">Base · Rare · NM</div><div class="price-row"><span class="price">£12</span><span class="stock">2</span></div></div>
+          </div>
+          <div class="listing">
+            <div class="well"><img src="https://images.pokemontcg.io/base1/3.png" alt="Chansey" /></div>
+            <div class="body"><div class="name">Chansey</div><div class="meta">Base · Rare · NM</div><div class="price-row"><span class="price">£18</span><span class="stock">1</span></div></div>
+          </div>
+          <div class="listing">
+            <div class="well y"><img src="https://images.pokemontcg.io/base1/58.png" alt="Pikachu" /></div>
+            <div class="body"><div class="name">Pikachu</div><div class="meta">Base · Common · NM</div><div class="price-row"><span class="price">£22</span><span class="stock">4</span></div></div>
+          </div>
+          <div class="listing">
+            <div class="well"><img src="https://images.pokemontcg.io/base1/11.png" alt="Nidoking" /></div>
+            <div class="body"><div class="name">Nidoking</div><div class="meta">Base · Rare · NM</div><div class="price-row"><span class="price">£14</span><span class="stock">2</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 10pt; font-size: 9pt;">
+    <strong>Key choice:</strong> filters live in the URL — so a buyer can bookmark
+    "Base set holos under £50" and forward it to a friend.
+  </p>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>06</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 7 · DATA ENGINE
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">06 · Data engine</span>
+  </div>
+
+  <div class="flex-between">
+    <div>
+      <span class="chip">The hard bit · done cheap</span>
+      <h2 class="display" style="margin-top: 6pt;">We only rent what moves.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      Card names don't change. Prices do. So the catalogue is stored once, on
+      your own infrastructure — and we only pay for feeds that genuinely
+      update. No recurring subscription where there doesn't need to be one.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid grid-3" style="gap: 12pt;">
+    <div class="feature" style="background: var(--yellow);">
+      <span class="chip">Source · 01</span>
+      <h3 class="display" style="margin-top: 5pt;">Self-hosted catalogue</h3>
+      <p style="font-size: 8.5pt;"><strong>The deliberate saving.</strong> A quarterly snapshot of the public card catalogue lives in your own Supabase. One-time ingest. <strong>Zero ongoing API cost.</strong></p>
+    </div>
+    <div class="feature" style="background: var(--teal);">
+      <span class="chip">Free · 02</span>
+      <h3 class="display" style="margin-top: 5pt;">TCGCSV</h3>
+      <p style="font-size: 8.5pt;"><strong>A free daily mirror of TCGplayer's live market data.</strong> Low · mid · high · market · direct-low — all conditions, all printings. Pulled nightly. <strong>£0 per month.</strong></p>
+    </div>
+    <div class="feature" style="background: var(--pink);">
+      <span class="chip">Free · 03</span>
+      <h3 class="display" style="margin-top: 5pt;">open.er-api.com</h3>
+      <p style="font-size: 8.5pt;"><strong>No-cost FX.</strong> Daily USD → GBP rates, stamped with every transaction. Free tier is stable and audit-friendly.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="arch-h">
+    <div class="cluster">
+      <div class="arch-node yellow"><div class="title">Local catalogue</div><div class="sub">Quarterly snapshot · 20k+ cards · zero API cost</div></div>
+      <div class="arch-node teal"><div class="title">Prices</div><div class="sub">TCGCSV · daily mirror · £0</div></div>
+      <div class="arch-node pink"><div class="title">FX</div><div class="sub">open.er-api.com · daily</div></div>
+    </div>
+    <div class="arch-arrow-h"></div>
+    <div class="cluster">
+      <div class="arch-node ink">
+        <div class="title">Vercel cron · nightly</div>
+        <div class="sub">Refresh prices + FX · normalise · flag low-confidence · write</div>
+      </div>
+    </div>
+    <div class="arch-arrow-h"></div>
+    <div class="cluster">
+      <div class="arch-node"><div class="title">cb_cards</div><div class="sub">Canonical catalogue · stable</div></div>
+      <div class="arch-node"><div class="title">cb_prices</div><div class="sub">Nightly-refreshed raw &amp; graded · previous kept for audit</div></div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 10pt; font-size: 9pt; max-width: 120ch;">
+    <strong>Why this matters:</strong> a typical off-the-shelf Pokémon platform pays
+    £30–£400 a month for catalogue and price APIs. Yours pays <strong>£0</strong>
+    — catalogue lives locally, prices come from a free daily TCGplayer mirror,
+    FX is free. No computed offers are stored; raw inputs go in, the offer is
+    recalculated against your live margins on every view. Move a dial at 9am
+    — every offer on the site updates by 9:01.
+  </p>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>07</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 8 · PRICING ENGINE
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">07 · Pricing engine</span>
+  </div>
+
+  <div class="flex-between">
+    <div>
+      <span class="chip">The formula</span>
+      <h2 class="display" style="margin-top: 6pt;">Six inputs. One offer.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      Every offer on the site runs through the same formula.
+      Five of the six inputs are dials you own.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="formula-frame">
+    <div class="tiny">Buy-offer · calculated at read-time</div>
+    <div class="formula-row" style="margin-top: 8pt;">
+      <span class="lhs">offer<sub>GBP</sub></span>
+      <span class="eq">=</span>
+      <span class="pill pill-src">TCGplayer market<sub>USD</sub></span>
+      <span class="x">×</span>
+      <span class="pill pill-fx">FX<sub>USD→GBP</sub></span>
+      <span class="x">×</span>
+      <span class="pill pill-mult">condition</span>
+      <span class="x">×</span>
+      <span class="pill pill-mult">set</span>
+      <span class="x">×</span>
+      <span class="pill pill-mult">rarity</span>
+      <span class="x">×</span>
+      <span class="pill pill-dial">buy margin</span>
+    </div>
+    <div class="formula-key">
+      <div><strong>Sourced</strong><div>API · non-negotiable anchor</div></div>
+      <div><strong>Stamped</strong><div>Daily · audit record</div></div>
+      <div><strong>Yours</strong><div>Every × is a dial in admin</div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid" style="grid-template-columns: 1fr 1fr 140pt; gap: 16pt; align-items: start;">
+    <div>
+      <h3 class="display" style="font-size: 14pt;">Worked example · Charizard · Base · Holo · NM</h3>
+      <table class="compare" style="margin-top: 6pt;">
+        <tbody>
+          <tr><td>TCGplayer market</td><td>$48.20</td><td class="muted" style="font-size: 8pt;">Daily mirror · TCGCSV</td></tr>
+          <tr><td>× FX rate</td><td>× 0.79</td><td class="muted" style="font-size: 8pt;">USD → GBP today</td></tr>
+          <tr><td>× Condition (NM)</td><td>× 1.00</td><td class="muted" style="font-size: 8pt;">Baseline</td></tr>
+          <tr><td>× Set (Base)</td><td>× 1.05</td><td class="muted" style="font-size: 8pt;">Hot set</td></tr>
+          <tr><td>× Rarity (Holo)</td><td>× 1.10</td><td class="muted" style="font-size: 8pt;">Moves fast</td></tr>
+          <tr><td>× Buy margin</td><td>× 0.60</td><td class="muted" style="font-size: 8pt;">Your headline dial</td></tr>
+          <tr><td class="accent">Final offer</td><td class="accent"><strong>£26.40</strong></td><td class="accent" style="font-size: 8pt;">Frozen 7 days if accepted</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 class="display" style="font-size: 14pt;">Confidence — never blind.</h3>
+      <p style="font-size: 8.5pt;" class="muted">A price built on 24 sales is strong. On 2 it's a coin toss. The system flags both.</p>
+      <div class="stack" style="margin-top: 8pt;">
+        <div class="pop-sm" style="padding: 7pt 10pt; background: #eaf9f5; display: flex; justify-content: space-between; align-items: baseline; gap: 10pt;">
+          <div>
+            <div class="tiny" style="font-size: 6.5pt;">Strong</div>
+            <div class="display" style="font-size: 13pt;">15+ sales</div>
+          </div>
+          <span style="font-size: 8pt;" class="muted">Auto-accept</span>
+        </div>
+        <div class="pop-sm" style="padding: 7pt 10pt; background: #fff8dd; display: flex; justify-content: space-between; align-items: baseline; gap: 10pt;">
+          <div>
+            <div class="tiny" style="font-size: 6.5pt;">Soft</div>
+            <div class="display" style="font-size: 13pt;">5–14 sales</div>
+          </div>
+          <span style="font-size: 8pt;" class="muted">Low-volume flag</span>
+        </div>
+        <div class="pop-sm" style="padding: 7pt 10pt; background: #ffeaea; display: flex; justify-content: space-between; align-items: baseline; gap: 10pt;">
+          <div>
+            <div class="tiny" style="font-size: 6.5pt;">Review</div>
+            <div class="display" style="font-size: 13pt;">&lt; 5 sales</div>
+          </div>
+          <span style="font-size: 8pt;" class="muted">Manual queue</span>
+        </div>
+      </div>
+    </div>
+    <div class="tcg" style="--w: 110pt; margin: 0 auto; transform: rotate(4deg);">
+      <img src="https://images.pokemontcg.io/base1/4.png" alt="Charizard · Base Holo" />
+      <span class="cond">HOLO · NM</span>
+      <span class="tag p">£26.40</span>
+    </div>
+  </div>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>08</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 9 · YOUR ADMIN
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">08 · Your admin</span>
+  </div>
+
+  <div class="flex-between" style="margin-bottom: 8pt;">
+    <div>
+      <span class="chip">The cockpit</span>
+      <h2 class="display" style="margin-top: 6pt;">Your dashboard.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      What you'll spend most of your time in. Quiet where it needs to be,
+      loud where a decision's pending.
+    </p>
+  </div>
+
+  <div class="mock">
+    <div class="mock-bar">
+      <span>admin · /admin</span>
+      <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    </div>
+    <div class="admin-mock">
+      <div class="admin-nav">
+        <span class="active">Dashboard</span>
+        <span>Submissions</span>
+        <span>Pricing</span>
+        <span>Inventory</span>
+        <span>Orders</span>
+        <span>Catalogue</span>
+        <span>Users</span>
+      </div>
+
+      <div style="margin-bottom: 8pt;">
+        <div class="tiny" style="font-size: 6.5pt; margin-bottom: 3pt;">Dashboard</div>
+        <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 14pt; line-height: 1; letter-spacing: -0.01em;">Today at cardbuy</div>
+        <p style="font-size: 7pt; margin: 3pt 0 0; color: var(--secondary);">Two sides of the business in one view. Buy on the left, sell on the right.</p>
+      </div>
+
+      <div class="admin-tiles">
+        <div class="admin-tile" style="background: var(--yellow);"><div class="n">12</div><div class="l">Submissions · awaiting verify</div></div>
+        <div class="admin-tile" style="background: var(--yellow);"><div class="n">3</div><div class="l">Flagged · low confidence</div></div>
+        <div class="admin-tile" style="background: var(--pink);"><div class="n">47</div><div class="l">Active listings</div></div>
+        <div class="admin-tile" style="background: var(--pink);"><div class="n">6</div><div class="l">Orders to pack</div></div>
+      </div>
+
+      <div class="admin-table">
+        <div class="admin-row head">
+          <span>#</span><span>Ref · Seller</span><span>Total</span><span>Cards</span><span>Status</span>
+        </div>
+        <div class="admin-row"><span>01</span><span><span class="ref">CB-2026-000042</span> · A. Hughes</span><span>£26.40</span><span>1 (Gyarados)</span><span class="status s-p">Flagged</span></div>
+        <div class="admin-row"><span>02</span><span><span class="ref">CB-2026-000041</span> · R. Singh</span><span>£184.90</span><span>12</span><span class="status s-t">In post</span></div>
+        <div class="admin-row"><span>03</span><span><span class="ref">CB-2026-000040</span> · M. O'Brien</span><span>£62.00</span><span>4</span><span class="status s-y">Received</span></div>
+        <div class="admin-row"><span>04</span><span><span class="ref">CB-2026-000039</span> · J. Turner</span><span>£540.00</span><span>1 · Charizard PSA 10</span><span class="status s-t">Paid</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-4" style="margin-top: 10pt; gap: 8pt;">
+    <div class="feature">
+      <h4 class="display">Submissions</h4>
+      <p style="font-size: 8pt;">Line-by-line verify. Accept, renegotiate, or reject per card.</p>
+    </div>
+    <div class="feature">
+      <h4 class="display">Pricing dials</h4>
+      <p style="font-size: 8pt;">All five margin dials in one screen. Preview before applying.</p>
+    </div>
+    <div class="feature">
+      <h4 class="display">Inventory</h4>
+      <p style="font-size: 8pt;">Featured toggles, per-listing price overrides, dispatch queue.</p>
+    </div>
+    <div class="feature" style="background: var(--yellow);">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <h4 class="display">Price sync</h4>
+        <span style="font-family: var(--font-display); font-size: 6pt; letter-spacing: 0.08em; background: var(--teal); border: 1.5px solid var(--ink); padding: 1.5pt 4pt; line-height: 1;">SCHEDULED</span>
+      </div>
+      <p style="font-size: 8pt; margin-bottom: 4pt;">TCGCSV · nightly 03:00 GMT · last run <strong>20 Apr · 21,481 rows</strong>.</p>
+      <span style="display: inline-block; background: var(--ink); color: var(--paper); font-family: var(--font-display); text-transform: uppercase; font-size: 7pt; letter-spacing: 0.08em; padding: 3pt 6pt; line-height: 1; box-shadow: 2px 2px 0 0 var(--ink);">Run sync now →</span>
+    </div>
+  </div>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>09</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 10 · APIS VS OFF-THE-SHELF
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">09 · Why APIs win</span>
+  </div>
+
+  <div class="flex-between">
+    <div>
+      <span class="chip">The choice</span>
+      <h2 class="display" style="margin-top: 6pt;">APIs vs. off-the-shelf.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      Most UK single-merchants use Shopify + email buylisting. It works —
+      and it costs them ~18 hours a week they'll never get back.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 14pt;">
+    <div>
+      <h3 class="display" style="font-size: 14pt;">The three realistic options.</h3>
+      <table class="compare" style="margin-top: 6pt;">
+        <thead>
+          <tr><th>Approach</th><th>Buylist</th><th>Shopfront</th><th>Freshness</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Shopify + CSV</td><td class="bad">Email-and-quote</td><td class="good">Strong checkout</td><td class="bad">Stale</td></tr>
+          <tr><td>eBay storefront</td><td class="bad">Not supported</td><td>12% fees</td><td>eBay's data</td></tr>
+          <tr><td class="accent">Your platform</td><td class="good">Instant · 24/7</td><td class="good">Curated · branded</td><td class="good">Nightly</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3 class="display" style="font-size: 14pt;">A week · 100 cards · 8 submissions.</h3>
+      <table class="compare" style="margin-top: 6pt;">
+        <thead>
+          <tr><th>Task / week</th><th>Off-the-shelf</th><th class="accent">Your platform</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Buylist quoting</td><td class="bad">~8 hrs</td><td class="good">~0 hrs</td></tr>
+          <tr><td>Re-pricing listings</td><td class="bad">~3 hrs</td><td class="good">~0 hrs</td></tr>
+          <tr><td>Photograph &amp; list</td><td>~6 hrs</td><td>~4 hrs</td></tr>
+          <tr><td>Seller questions</td><td class="bad">~4 hrs</td><td class="good">~0 hrs</td></tr>
+          <tr><td>Margin tuning</td><td class="bad">~2 hrs</td><td class="good">~30 sec</td></tr>
+          <tr><td class="accent">Total</td><td class="bad">~23 hrs</td><td class="good">~4.5 hrs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid grid-3" style="gap: 10pt;">
+    <div class="metric" style="background: var(--yellow);">
+      <div class="n">~18h</div>
+      <div class="l">Reclaimed per week</div>
+    </div>
+    <div class="metric" style="background: var(--teal);">
+      <div class="n">~950h</div>
+      <div class="l">Reclaimed per year</div>
+    </div>
+    <div class="metric" style="background: var(--pink);">
+      <div class="n">1 hire</div>
+      <div class="l">Avoided · roughly</div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 10pt; font-size: 9pt;">
+    <strong>Compounding:</strong> the time returned is only half the story. The
+    margin protected by <em>never</em> quoting from a stale price is the other
+    half — harder to measure, but bigger.
+  </p>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>10</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 11 · ROADMAP + APPROVAL
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">10 · Roadmap &amp; approval</span>
+  </div>
+
+  <div class="flex-between">
+    <div>
+      <span class="chip">How it gets built</span>
+      <h2 class="display" style="margin-top: 6pt;">Five phases. Reviewed at each.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      You never commit to phase N+1 until phase N is demoed and signed off.
+      Surprises stay small and scope stays honest.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="timeline-h">
+    <div class="step t">
+      <span class="phase">Phase 1</span>
+      <h4>Wireframe &amp; IA</h4>
+      <p>Every route and flow laid out in greyscale. Structure agreed before look.</p>
+    </div>
+    <div class="step p">
+      <span class="phase">Phase 2</span>
+      <h4>Brand system</h4>
+      <p>Pop-art palette applied across the wireframe — the version you're holding.</p>
+    </div>
+    <div class="step y">
+      <span class="phase">Phase 3</span>
+      <h4>Data layer</h4>
+      <p>Supabase, auth, TCGCSV price ingest, nightly cron, manual admin refresh.</p>
+    </div>
+    <div class="step">
+      <span class="phase">Phase 4</span>
+      <h4>Pricing engine</h4>
+      <p>Formula wired through admin dials. Confidence scoring. Offer freeze.</p>
+    </div>
+    <div class="step t">
+      <span class="phase">Phase 5</span>
+      <h4>Lifecycle</h4>
+      <p>Shipping labels, verification UI, Stripe, PayPal Payouts, email flow.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid" style="grid-template-columns: 1.4fr 1fr; gap: 14pt;">
+    <div class="pop" style="padding: 12pt; background: var(--paper-strong); border-radius: 4pt;">
+      <span class="chip">Approval</span>
+      <h3 class="display" style="margin-top: 5pt; font-size: 16pt;">Sign below to set the baseline.</h3>
+      <p style="font-size: 8.5pt;" class="muted">
+        Commercial terms live in the accompanying letter. Your signature here
+        confirms the scope, flows, data sources, and technical approach
+        described in this document as the build baseline.
+      </p>
+
+      <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 14pt; margin-top: 12pt;">
+        <div>
+          <div style="height: 22pt; border-bottom: 1.5px solid var(--ink);"></div>
+          <div class="tiny" style="margin-top: 4pt;">Lewis · signature</div>
+        </div>
+        <div>
+          <div style="height: 22pt; border-bottom: 1.5px solid var(--ink);"></div>
+          <div class="tiny" style="margin-top: 4pt;">Date</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pop" style="padding: 12pt; background: var(--ink); color: var(--paper); border-radius: 4pt;">
+      <span class="chip" style="background: var(--paper); color: var(--ink);">Next</span>
+      <h3 class="display" style="margin-top: 5pt; font-size: 16pt; color: var(--paper);">Kick-off in 7 days.</h3>
+      <p style="font-size: 8.5pt; color: #cdbda0;">
+        Once signed, we book a 60-minute call to walk through Phase 1 in detail
+        and lock a provisional delivery date for each milestone.
+      </p>
+      <ul style="color: var(--paper); padding-left: 14pt; margin-top: 8pt;">
+        <li>Credentials collected into a password manager you own</li>
+        <li>Supabase &amp; Vercel projects provisioned</li>
+        <li>First deploy on staging within 10 working days</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>11</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 12 · BACK COVER
+====================================================================== -->
+<section class="page" style="padding: 0;">
+  <div style="height: 210mm; background: var(--ink); color: var(--paper); position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr;">
+
+    <div style="padding: 20mm; display: flex; flex-direction: column; justify-content: space-between; z-index: 2; position: relative;">
+      <div>
+        <div class="tiny" style="color: var(--paper); font-size: 8pt;">Thank you for reading.</div>
+        <h1 class="display" style="color: var(--paper); font-size: 64pt; line-height: 0.88; margin-top: 12pt; letter-spacing: -0.03em;">
+          Let's<br/>build it<span style="color: var(--pink);">.</span>
+        </h1>
+        <p style="color: #cdbda0; font-size: 10pt; line-height: 1.55; max-width: 90mm; margin-top: 14pt;">
+          Any question, doubt, or better idea — mark it up. This scope belongs
+          to you long before a line of code does.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10pt; padding-top: 12pt; border-top: 1.5px solid var(--paper);">
+        <div>
+          <div class="tiny" style="color: var(--paper); opacity: 0.7;">Document</div>
+          <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 10pt; margin-top: 3pt;">Scope &amp; Design</div>
+        </div>
+        <div>
+          <div class="tiny" style="color: var(--paper); opacity: 0.7;">Prepared</div>
+          <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 10pt; margin-top: 3pt;">April 2026</div>
+        </div>
+        <div>
+          <div class="tiny" style="color: var(--paper); opacity: 0.7;">By</div>
+          <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 10pt; margin-top: 3pt;">Tom.Peacock.Design</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 18mm; left: 10mm; transform: rotate(-12deg); z-index: 2;">
+        <div class="tcg" style="--w: 58mm;">
+          <img src="https://images.pokemontcg.io/base1/4.png" alt="Charizard" />
+        </div>
+      </div>
+      <div style="position: absolute; top: 70mm; left: 48mm; transform: rotate(3deg); z-index: 3;">
+        <div class="tcg" style="--w: 62mm;">
+          <img src="https://images.pokemontcg.io/basep/8.png" alt="Mew Promo" />
+        </div>
+      </div>
+      <div style="position: absolute; top: 128mm; left: 18mm; transform: rotate(10deg); z-index: 2;">
+        <div class="tcg" style="--w: 55mm;">
+          <img src="https://images.pokemontcg.io/base1/2.png" alt="Blastoise" />
+        </div>
+      </div>
+      <div style="position: absolute; top: 40mm; left: 90mm; transform: rotate(18deg); z-index: 1;">
+        <div class="tcg" style="--w: 48mm;">
+          <img src="https://images.pokemontcg.io/base1/58.png" alt="Pikachu" />
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
