@@ -119,37 +119,54 @@ export async function sleepPolite(): Promise<void> {
 
 /**
  * Resolve our internal set ids (e.g. `base1`) to TCGCSV groupIds by
- * exact-match on group name. Unmatched sets return `null` — the
- * preview page surfaces these so the operator can adjust names.
+ * exact-match on group name. Each local set carries a list of
+ * candidate names; the first alias that resolves wins. Unmatched
+ * sets return `null` so the preview page can surface them.
  *
- * Expected names for first-gen verification (Phase 3 slice 1 scope):
- *   base1  → "Base Set"
- *   base2  → "Jungle"
- *   base3  → "Fossil"
- *   base4  → "Base Set 2"
- *   base5  → "Team Rocket"
- *   basep  → "Wizards Black Star Promos"
+ * The alias list lets us handle naming drift between our local
+ * catalogue (pokemontcg.io) and TCGCSV without a code change each
+ * time TCGplayer renames a group.
  */
 export async function resolveGroupIds(
-  sets: Record<string, string>,
+  sets: Record<string, readonly string[]>,
 ): Promise<Record<string, number | null>> {
   const groups = await fetchGroups();
   const byName = new Map(
     groups.map((g) => [g.name.trim().toLowerCase(), g.groupId]),
   );
   const out: Record<string, number | null> = {};
-  for (const [localId, tcgName] of Object.entries(sets)) {
-    out[localId] = byName.get(tcgName.trim().toLowerCase()) ?? null;
+  for (const [localId, aliases] of Object.entries(sets)) {
+    let found: number | null = null;
+    for (const alias of aliases) {
+      const hit = byName.get(alias.trim().toLowerCase());
+      if (hit != null) {
+        found = hit;
+        break;
+      }
+    }
+    out[localId] = found;
   }
   return out;
 }
 
-/** The six set-name mappings we verify in Phase 3 slice 1. */
-export const PHASE3_SLICE1_SETS: Record<string, string> = {
-  base1: "Base Set",
-  base2: "Jungle",
-  base3: "Fossil",
-  base4: "Base Set 2",
-  base5: "Team Rocket",
-  basep: "Wizards Black Star Promos",
+/**
+ * The six set-name mappings we verify in Phase 3 slice 1. First alias
+ * per set is the canonical TCGCSV name; subsequent entries are
+ * legacy / alternate spellings we've observed.
+ *
+ * `basep`: TCGCSV abbreviates as "WoTC Promo" (not the longer
+ * "Wizards of the Coast Black Star Promos" we originally assumed).
+ *
+ * Known v1 gap — Base Set Machamp (#8/102) is absent from group 604
+ * because TCGplayer catalogued it only under "Base Set (Shadowless)"
+ * (group 1663). Slice 3 will introduce a per-card override table for
+ * cases like this.
+ */
+export const PHASE3_SLICE1_SETS: Record<string, readonly string[]> = {
+  base1: ["Base Set"],
+  base2: ["Jungle"],
+  base3: ["Fossil"],
+  base4: ["Base Set 2"],
+  base5: ["Team Rocket"],
+  basep: ["WoTC Promo", "Wizards Black Star Promos"],
 };

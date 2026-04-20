@@ -85,16 +85,23 @@ export type MappingResult = {
  *
  * The set + number carries the identity; name is a secondary check,
  * not a primary key — so this is allowed to be aggressive.
+ *
+ * Apostrophes are stripped tightly (no space) so "Farfetch'd" matches
+ * TCGplayer's "Farfetchd". Trailing bare digits are also stripped —
+ * TCGplayer sometimes suffixes cards sharing a name with their
+ * number ("Rockets Sneak Attack 16", "Rockets Sneak Attack 72").
  */
 export function normaliseName(name: string): string {
   return name
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "") // diacritics
     .toLowerCase()
+    .replace(/['\u2018\u2019\u02BC`]/g, "") // apostrophes / smart quotes — tight (no space)
     .replace(/\([^)]*\)/g, " ") // parentheticals
     .replace(/\[[^\]]*\]/g, " ")
     .replace(/-\s*(1st edition|unlimited|shadowless|holo).*/i, "")
-    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/[^a-z0-9 ]+/g, " ") // remaining punctuation → space
+    .replace(/\s+\d+\s*$/, "") // trailing bare number ("rockets sneak attack 16")
     .replace(/\s+/g, " ")
     .trim();
 }

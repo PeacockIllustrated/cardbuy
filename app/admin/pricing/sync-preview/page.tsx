@@ -137,14 +137,20 @@ export default async function SyncPreviewPage() {
               </TR>
             </THead>
             <TBody>
-              {Object.entries(PHASE3_SLICE1_SETS).map(([localId, tcgName]) => {
+              {Object.entries(PHASE3_SLICE1_SETS).map(([localId, aliases]) => {
                 const gid = groupsResult.value[localId];
+                const tcgName = aliases[0]; // primary name; fallbacks still tried
                 return (
                   <TR key={localId}>
                     <TD>
                       <code className="font-mono text-[13px]">{localId}</code>
                     </TD>
-                    <TD>{tcgName}</TD>
+                    <TD>
+                      {tcgName}
+                      {aliases.length > 1 ? (
+                        <span className="text-[10px] text-muted"> · +{aliases.length - 1} fallback</span>
+                      ) : null}
+                    </TD>
                     <TD>
                       {gid != null ? (
                         <code className="font-mono text-[13px]">{gid}</code>

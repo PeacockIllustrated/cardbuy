@@ -49,7 +49,8 @@ export default async function MappingPreviewPage() {
   // 2 · For each set, fetch products (serialised with politeness) and
   //     build the mapping against our local catalogue.
   const perSet: PerSet[] = [];
-  for (const [setId, tcgName] of Object.entries(PHASE3_SLICE1_SETS)) {
+  for (const [setId, aliases] of Object.entries(PHASE3_SLICE1_SETS)) {
+    const tcgName = aliases[0]; // primary name shown in UI
     const groupId = groupMap[setId] ?? null;
     const sStart = performance.now();
     if (!groupId) {
@@ -58,7 +59,7 @@ export default async function MappingPreviewPage() {
         tcgName,
         groupId: null,
         result: null,
-        error: "groupId did not resolve",
+        error: `groupId did not resolve (tried ${aliases.length} alias${aliases.length === 1 ? "" : "es"})`,
         ms: 0,
       });
       continue;
