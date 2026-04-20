@@ -116,6 +116,66 @@ export function productRarity(p: TcgProduct): string | null {
 }
 
 /**
+ * Classic Levenshtein edit distance. Iterative two-row implementation;
+ * O(|a|·|b|) time, O(min(|a|,|b|)) space. Used by `namesCompatible`
+ * to accept tiny catalogue spelling variances (Impostor ↔ Imposter)
+ * as matches when the card number already agrees.
+ */
+export function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  // Keep the shorter string on the inner loop — tiny memory win.
+  if (a.length > b.length) [a, b] = [b, a];
+  let prev = new Array<number>(a.length + 1);
+  let curr = new Array<number>(a.length + 1);
+  for (let i = 0; i <= a.length; i++) prev[i] = i;
+  for (let j = 1; j <= b.length; j++) {
+    curr[0] = j;
+    for (let i = 1; i <= a.length; i++) {
+      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      curr[i] = Math.min(
+        curr[i - 1] + 1, // insertion
+        prev[i] + 1, // deletion
+        prev[i - 1] + cost, // substitution
+      );
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[a.length];
+}
+
+/**
+ * Fuzzy-match threshold for edit distance. Scales ~1 per 10 chars
+ * so short names stay strict (1 typo max) and long names tolerate
+ * a little more drift (e.g. "Impostor Professor Oak" ↔ "Imposter
+ * Professor Oak" = 22 chars, edit distance 1, threshold 2 → pass).
+ */
+export function fuzzyThreshold(len: number): number {
+  return Math.max(1, Math.floor(len / 10));
+}
+
+/**
+ * Are these two normalised names close enough to be the same card?
+ *
+ * Identity > substring-containment > bounded edit distance. The
+ * fuzzy tier catches real-world catalogue drift between pokemontcg.io
+ * and TCGplayer — misspellings present on the physical card that one
+ * source copied faithfully and the other corrected. Because fuzzy is
+ * only checked after card Number has already matched, a false
+ * positive would require two adjacent-numbered cards to have near-
+ * identical names — extremely rare.
+ */
+export function namesCompatible(a: string, b: string): { ok: boolean; distance: number } {
+  if (a === b) return { ok: true, distance: 0 };
+  if (!a || !b) return { ok: false, distance: Math.max(a.length, b.length) };
+  if (a.includes(b) || b.includes(a)) return { ok: true, distance: 0 };
+  const distance = levenshtein(a, b);
+  const threshold = fuzzyThreshold(Math.max(a.length, b.length));
+  return { ok: distance <= threshold, distance };
+}
+
+/**
  * Reduce any card-number variant to a canonical integer string when
  * possible. TCGCSV returns "4" or "4/102"; pokemontcg.io returns "4";
  * we want "4" from both.
@@ -181,7 +241,17 @@ export function buildMapping(
     if (numMatches.length === 1) {
       const p = numMatches[0];
       const pNm = normaliseName(p.cleanName || p.name);
-      const nameOK = pNm === cardNm || pNm.includes(cardNm) || cardNm.includes(pNm);
+      const cmp = namesCompatible(pNm, cardNm);
+      const notes: string[] = [];
+      if (cmp.ok && cmp.distance > 0) {
+        notes.push(
+          `fuzzy name match · edit distance ${cmp.distance} · "${card.name}" ≈ "${p.cleanName || p.name}"`,
+        );
+      } else if (!cmp.ok) {
+        notes.push(
+          `name "${card.name}" vs TCG "${p.cleanName || p.name}" · edit distance ${cmp.distance}`,
+        );
+      }
       matched.push({
         cardId: card.id,
         cardName: card.name,
@@ -191,10 +261,8 @@ export function buildMapping(
         productName: p.cleanName || p.name,
         productNumber: productNumber(p),
         productRarity: productRarity(p),
-        confidence: nameOK ? "exact" : "number-only",
-        notes: nameOK
-          ? []
-          : [`name "${card.name}" vs TCG "${p.cleanName || p.name}"`],
+        confidence: cmp.ok ? "exact" : "number-only",
+        notes,
       });
       usedProductIds.add(p.productId);
       continue;
@@ -204,7 +272,7 @@ export function buildMapping(
       // Multiple products share this number. Try to disambiguate on name.
       const nameNarrowed = numMatches.filter((p) => {
         const pNm = normaliseName(p.cleanName || p.name);
-        return pNm === cardNm;
+        return namesCompatible(pNm, cardNm).ok;
       });
       if (nameNarrowed.length === 1) {
         const p = nameNarrowed[0];
