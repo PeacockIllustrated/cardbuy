@@ -234,12 +234,22 @@ export function HeroCardReel({ cards }: Props) {
       style={{ height: "min(260vh, calc(70vh + 5 * 38vh))" }}
       aria-label="Rarity showcase: scroll to rise from common to chase cards"
     >
-      <div className="sticky top-[8vh] h-[70vh] overflow-hidden flex flex-col rounded-xl border-[3px] border-ink bg-paper-strong">
+      <div className="sticky top-[15vh] h-[70vh] overflow-hidden flex flex-col rounded-xl border-[3px] border-ink bg-paper-strong">
         {/* Rarity-tinted backdrop */}
         <div
           ref={stageBgRef}
           className="absolute inset-0 bg-paper-strong transition-colors duration-500 ease-out"
           aria-hidden="true"
+        />
+
+        {/* Right-column translucent wash. Lives outside the grid so it
+            spans the full height of the sticky (including the header
+            strip) — otherwise the tier-tinted backdrop pokes through
+            above the aside. Desktop only. */}
+        <div
+          aria-hidden="true"
+          className="hidden md:block absolute top-0 bottom-0 right-0 bg-paper-strong/40 backdrop-blur-[1px] pointer-events-none"
+          style={{ left: "calc(1.15 / 2 * 100%)" }}
         />
 
         {/* Vertical divider that runs the full height of the sticky, so
@@ -296,7 +306,7 @@ export function HeroCardReel({ cards }: Props) {
           {/* DESKTOP info panel — hidden on mobile. A translucent
               paper wash lifts it subtly off the tier backdrop without
               changing the palette wholesale. */}
-          <aside className="hidden md:flex relative flex-col justify-center gap-4 px-6 lg:px-10 py-6 bg-paper-strong/40 backdrop-blur-[1px]">
+          <aside className="hidden md:flex relative flex-col justify-center gap-4 px-6 lg:px-10 py-6">
             <div className="flex items-center gap-2">
               <span
                 ref={tierChipRef}

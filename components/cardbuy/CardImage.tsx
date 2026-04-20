@@ -406,16 +406,6 @@ export function CardImage({
         ) : null}
       </div>
 
-      {!hideBadge ? (
-        <span
-          className="absolute top-2 left-2 z-10 font-display text-[9px] tracking-wider bg-yellow text-ink border-2 border-ink px-1.5 py-0.5 rounded-sm pointer-events-none"
-          aria-hidden="true"
-          style={{ transform: "translateZ(20px)" }}
-        >
-          [real]
-        </span>
-      ) : null}
-
       {hovered && isHolo ? (
         <span className="sr-only">Holo shimmer active</span>
       ) : null}

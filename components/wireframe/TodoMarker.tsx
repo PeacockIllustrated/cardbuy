@@ -7,16 +7,10 @@ type TodoMarkerProps = {
 };
 
 /**
- * Yellow tape chip — flags work that lands in a future phase.
- * Inline-only; doesn't disrupt layout flow.
+ * No-op in production. Historically rendered a yellow dev chip flagging
+ * work deferred to a later phase; kept as a component so call sites can
+ * stay in place while the badges are hidden from end users.
  */
-export function TodoMarker({ phase, children, className = "" }: TodoMarkerProps) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 bg-yellow text-ink border-2 border-ink px-2 py-0.5 text-[11px] font-display tracking-wider ${className}`.trim()}
-    >
-      <span className="opacity-70">P{phase}</span>
-      <span>{children}</span>
-    </span>
-  );
+export function TodoMarker(_props: TodoMarkerProps) {
+  return null;
 }

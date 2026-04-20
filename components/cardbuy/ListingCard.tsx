@@ -49,11 +49,6 @@ export function ListingCard({ listing, compact, accent }: Props) {
             rarity={listing.rarity}
             hideBadge
           />
-          {listing.is_featured ? (
-            <span className="absolute -top-2 -left-2 z-[5] bg-yellow text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider rotate-[-4deg] pointer-events-none">
-              Featured
-            </span>
-          ) : null}
           {soldOut ? (
             <span className="absolute -top-2 -right-2 z-[5] bg-warn text-paper-strong border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider rotate-[3deg] pointer-events-none">
               Sold out
