@@ -11,6 +11,7 @@ import {
   buildMapping,
   type MappingResult,
 } from "@/lib/pricing/build-mapping";
+import { CommitMappingButton } from "./CommitMappingButton";
 
 /**
  * Phase 3 slice 2 verification page.
@@ -185,6 +186,7 @@ export default async function MappingPreviewPage() {
               <TH className="text-right">Unmatched</TH>
               <TH className="text-right">Orphans</TH>
               <TH className="text-right">Time</TH>
+              <TH>Commit</TH>
             </TR>
           </THead>
           <TBody>
@@ -224,6 +226,13 @@ export default async function MappingPreviewPage() {
                   </TD>
                   <TD className="text-right font-mono">{s.result ? s.result.orphans.length : "—"}</TD>
                   <TD className="text-right font-mono text-[11px] text-muted">{s.ms}ms</TD>
+                  <TD>
+                    <CommitMappingButton
+                      setId={s.setId}
+                      matchedCount={s.result?.matched.length ?? 0}
+                      disabled={s.result === null}
+                    />
+                  </TD>
                 </TR>
               );
             })}
