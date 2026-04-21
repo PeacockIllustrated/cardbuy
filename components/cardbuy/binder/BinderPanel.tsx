@@ -348,7 +348,7 @@ export function BinderPanel({
       <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative z-[1]">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.45fr] rounded-sm overflow-hidden border-[2px] border-ink">
           {/* ─── LEFT PAGE · info pane ───────────────────────────── */}
-          <section className="relative bg-paper-strong p-5 md:p-6 min-h-[520px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
+          <section className="relative bg-paper-strong p-4 md:p-6 min-h-[320px] md:min-h-[520px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
             {activeSlot ? (
               <SlotDetails
                 slot={activeSlot}
@@ -484,6 +484,16 @@ export function BinderPanel({
         aria-hidden
         className="absolute left-4 right-4 -bottom-[6px] h-[2px] bg-ink/15 rounded-b-md"
       />
+
+      {/* Mobile shelf — rendered as a horizontal scrollable strip below
+          the binder. The desktop version docks behind the right edge;
+          on phones there's no gutter for that trick so we show the
+          shelf as its own full-width section instead. */}
+      {shelfEntries && shelfEntries.length > 0 ? (
+        <div className="md:hidden mt-4">
+          <MobileShelf entries={shelfEntries} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -529,6 +539,72 @@ function Shelf({ entries }: { entries: BinderShelfEntry[] }) {
         {entries.length}
       </div>
     </div>
+  );
+}
+
+/**
+ * Mobile shelf — a horizontal scroll rail rendered below the binder
+ * on screens narrower than `md`. Cards render portrait (same as a
+ * real card) rather than landscape-rotated, because there's room
+ * horizontally and rotation would be disorienting at thumb-size.
+ */
+function MobileShelf({ entries }: { entries: BinderShelfEntry[] }) {
+  return (
+    <section className="pop-static rounded-md bg-paper-strong overflow-hidden">
+      <div className="flex items-baseline justify-between px-3 py-2 border-b-2 border-ink">
+        <h3 className="font-display text-[10px] tracking-[0.25em] text-ink">
+          Energy · Trainer
+        </h3>
+        <span className="font-display text-[10px] tracking-wider tabular-nums text-muted">
+          {entries.length}
+        </span>
+      </div>
+      <ul
+        className="flex gap-2 overflow-x-auto scrollbar-none bg-paper/60 p-2"
+        aria-label="Energy and trainer cards"
+      >
+        {entries.map((entry) => (
+          <MobileShelfCard key={entry.id} entry={entry} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function MobileShelfCard({ entry }: { entry: BinderShelfEntry }) {
+  const variant =
+    entry.variant === "graded"
+      ? `${entry.grading_company} ${entry.grade}`
+      : entry.condition ?? "";
+  const toneBg =
+    entry.supertype === "Energy"
+      ? "bg-yellow"
+      : entry.supertype === "Trainer"
+        ? "bg-pink"
+        : "bg-paper-strong";
+  return (
+    <li
+      className={`relative shrink-0 w-[64px] aspect-[5/7] border-2 border-ink rounded-sm overflow-hidden ${toneBg}`}
+      title={`${entry.cardName} · ${entry.setName}${variant ? ` · ${variant}` : ""}`}
+    >
+      {entry.imageSmall ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={entry.imageSmall}
+          alt={entry.cardName}
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center font-display text-[8px] tracking-wider text-ink/60 text-center px-1 leading-tight">
+          {entry.cardName}
+        </div>
+      )}
+      {entry.quantity > 1 ? (
+        <span className="absolute top-0.5 right-0.5 bg-teal border-2 border-ink rounded-sm px-1 font-display text-[8px] tabular-nums leading-tight">
+          ×{entry.quantity}
+        </span>
+      ) : null}
+    </li>
   );
 }
 
