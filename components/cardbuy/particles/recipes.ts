@@ -1,14 +1,21 @@
 /**
- * Per-type particle recipes. Each one produces pop-art stylised
- * elemental visuals — chunky vector shapes with thick ink outlines
- * and brand-palette fills, not realistic textures.
+ * Per-type particle recipes.
  *
- * Covers Gen-1 TCG energy (Fire / Water / Grass / Lightning / Psychic
- * / Fighting). Anything else falls back to the generic sparkle recipe.
+ * Every elemental type now uses the same leafy upward-spiral motion
+ * that Grass originally had (spawns along the bottom, drifts up with a
+ * sinusoidal sway, rotates freely, fades out around 1.5s). The only
+ * thing that varies per type is the sprite rendered on each particle —
+ * a vendored Pokémon TCG energy icon from `public/icons/types/*.svg`
+ * (partywhale/pokemon-type-icons, MIT).
  *
- * All particles share a single canvas instance owned by
- * `ParticleField`. Recipes stay pure (no React, no DOM) so the render
- * loop can process them in a tight RAF.
+ * The old per-type hand-drawn shapes (flame, teardrop, zigzag, orb,
+ * star) have been retired — the real icons are more recognisable and
+ * the unified motion gives every listing tile the same rhythmic feel
+ * with only the pictogram identifying the type.
+ *
+ * Sprites are lazy-loaded once per page via a module-level `Image`
+ * cache — first-hover of any given type triggers a ~instant fetch.
+ * Canvas draw() short-circuits until the image is decoded.
  */
 
 /** Brand palette — mirrors CSS vars in `app/globals.css`. Canvas can't
@@ -21,14 +28,16 @@ export const COLORS = {
   yellow: "#ffe600",
 } as const;
 
-/** Gen-1 TCG energy types driven by this system. */
+/** TCG energy types driven by this system. Expand as new sprite SVGs
+ *  land in `public/icons/types/`. */
 export type ElementalType =
   | "Fire"
   | "Water"
   | "Grass"
   | "Lightning"
   | "Psychic"
-  | "Fighting";
+  | "Fighting"
+  | "Colorless";
 
 /** State carried per-live-particle. `data` holds recipe-specific scalars
  *  (phase seeds, pulse offsets, etc.) so the shape stays stable. */
@@ -56,6 +65,34 @@ export type Recipe = {
   draw: (ctx: CanvasRenderingContext2D, p: Particle) => void;
 };
 
+/** Public path → browser downloads these on first use. Keep filenames
+ *  in lock-step with `public/icons/types/README.md`. */
+const SPRITE_PATHS: Record<ElementalType, string> = {
+  Fire: "/icons/types/fire.svg",
+  Water: "/icons/types/water.svg",
+  Grass: "/icons/types/grass.svg",
+  Lightning: "/icons/types/lightning.svg",
+  Psychic: "/icons/types/psychic.svg",
+  Fighting: "/icons/types/fighting.svg",
+  Colorless: "/icons/types/colorless.svg",
+};
+
+/** Lazy per-page sprite cache. Created on first access to each type,
+ *  reused across every particle and every tile thereafter. */
+const spriteCache = new Map<ElementalType, HTMLImageElement>();
+
+function getSprite(type: ElementalType): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  let img = spriteCache.get(type);
+  if (!img) {
+    img = new Image();
+    img.decoding = "async";
+    img.src = SPRITE_PATHS[type];
+    spriteCache.set(type, img);
+  }
+  return img;
+}
+
 /** Alpha envelope: fade in first 15%, hold, fade out last 30%. */
 function alphaEnvelope(t: number): number {
   if (t < 0.15) return t / 0.15;
@@ -67,384 +104,85 @@ function rand(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-// ── Fire ──────────────────────────────────────────────────
-// Chunky upward flame teardrops, yellow tips + pink cores, rising
-// from the bottom with a horizontal flicker. Matches Charizard's
-// Ember / Fire Spin vibe in the TCG without photoreal gradients.
-const fire: Recipe = {
-  spawnRate: 38,
-  maxParticles: 30,
-  create: (w, h) => ({
-    x: w * 0.2 + Math.random() * w * 0.6,
-    y: h + 6,
-    vx: rand(-18, 18),
-    vy: rand(-80, -48),
-    age: 0,
-    life: rand(0.7, 1.1),
-    size: rand(7, 12),
-    rotation: rand(-0.2, 0.2),
-    vr: rand(-0.8, 0.8),
-    fill: Math.random() < 0.55 ? COLORS.yellow : COLORS.pink,
-    data: { a: Math.random() * Math.PI * 2 },
-  }),
-  update: (p, dt) => {
-    p.x += p.vx * dt + Math.sin((p.age + (p.data.a ?? 0)) * 12) * dt * 8;
-    p.y += p.vy * dt;
-    p.vy -= 40 * dt;
-    p.vx *= Math.pow(0.45, dt);
-    p.rotation += p.vr * dt;
-    p.size *= Math.pow(0.92, dt);
-  },
-  draw: (ctx, p) => {
-    const a = alphaEnvelope(p.age / p.life);
-    if (a <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rotation);
-    const s = p.size;
-    ctx.beginPath();
-    ctx.moveTo(0, s * 0.9);
-    ctx.quadraticCurveTo(-s * 1.1, s * 0.2, -s * 0.55, -s * 0.35);
-    ctx.quadraticCurveTo(-s * 0.25, -s * 1.2, 0, -s * 1.55);
-    ctx.quadraticCurveTo(s * 0.25, -s * 1.2, s * 0.55, -s * 0.35);
-    ctx.quadraticCurveTo(s * 1.1, s * 0.2, 0, s * 0.9);
-    ctx.closePath();
-    ctx.fillStyle = p.fill;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    ctx.restore();
-  },
-};
-
-// ── Water ─────────────────────────────────────────────────
-// Teardrops falling from the top with a gentle horizontal sway.
-// Teal + paper so they read on the pink section backdrop. Echoes
-// Blastoise's Hydro Pump / Water Gun stream but stylised as beads.
-const water: Recipe = {
-  spawnRate: 30,
-  maxParticles: 26,
-  create: (w) => ({
-    x: rand(w * 0.1, w * 0.9),
-    y: -6,
-    vx: rand(-10, 10),
-    vy: rand(60, 100),
-    age: 0,
-    life: rand(0.9, 1.3),
-    size: rand(6, 10),
-    rotation: 0,
-    vr: 0,
-    fill: Math.random() < 0.65 ? COLORS.teal : COLORS.paper,
-    data: { a: Math.random() * Math.PI * 2 },
-  }),
-  update: (p, dt) => {
-    p.x += p.vx * dt + Math.sin((p.age + (p.data.a ?? 0)) * 4) * dt * 10;
-    p.y += p.vy * dt;
-    p.vy += 40 * dt;
-  },
-  draw: (ctx, p) => {
-    const a = alphaEnvelope(p.age / p.life);
-    if (a <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(p.x, p.y);
-    const s = p.size;
-    // Teardrop: pointed top, round-bellied bottom (falling direction).
-    ctx.beginPath();
-    ctx.moveTo(0, -s * 1.3);
-    ctx.bezierCurveTo(s * 0.9, -s * 0.5, s * 0.9, s * 0.6, 0, s * 0.9);
-    ctx.bezierCurveTo(-s * 0.9, s * 0.6, -s * 0.9, -s * 0.5, 0, -s * 1.3);
-    ctx.closePath();
-    ctx.fillStyle = p.fill;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    ctx.restore();
-  },
-};
-
-// ── Grass ─────────────────────────────────────────────────
-// Leaves spiralling upward with free rotation. Teal-dominant with
-// yellow accents. Echoes Venusaur's Solar Beam / Vine Whip reveal.
-const grass: Recipe = {
-  spawnRate: 18,
-  maxParticles: 20,
-  create: (w, h) => ({
+/** The one motion profile all types share — derived from the original
+ *  Grass recipe. Particles spawn along the bottom, drift up with a
+ *  horizontal sway, rotate freely, and fade. */
+function createParticle(w: number, h: number): Particle {
+  return {
     x: rand(w * 0.1, w * 0.9),
     y: h + 8,
     vx: rand(-15, 15),
     vy: rand(-50, -28),
     age: 0,
     life: rand(1.3, 1.9),
-    size: rand(8, 14),
+    // Larger than the original leaf shape — SVG sprites read smaller
+    // at the same "radius" because the pictogram only fills ~60% of
+    // the disc, so bump to compensate.
+    size: rand(11, 17),
     rotation: rand(0, Math.PI * 2),
     vr: rand(-1.4, 1.4),
-    fill: Math.random() < 0.7 ? COLORS.teal : COLORS.yellow,
+    fill: "",
     data: { a: rand(0, Math.PI * 2) },
-  }),
-  update: (p, dt) => {
-    p.x += p.vx * dt + Math.sin((p.age + (p.data.a ?? 0)) * 3) * dt * 15;
-    p.y += p.vy * dt;
-    p.vy -= 5 * dt;
-    p.rotation += p.vr * dt;
-  },
-  draw: (ctx, p) => {
-    const a = alphaEnvelope(p.age / p.life);
-    if (a <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rotation);
-    const s = p.size;
-    // Leaf: pointed oval.
-    ctx.beginPath();
-    ctx.moveTo(0, -s * 1.2);
-    ctx.bezierCurveTo(s * 0.75, -s * 0.8, s * 0.75, s * 0.8, 0, s * 1.2);
-    ctx.bezierCurveTo(-s * 0.75, s * 0.8, -s * 0.75, -s * 0.8, 0, -s * 1.2);
-    ctx.closePath();
-    ctx.fillStyle = p.fill;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    // Central spine.
-    ctx.beginPath();
-    ctx.moveTo(0, -s * 1.05);
-    ctx.lineTo(0, s * 1.05);
-    ctx.strokeStyle = COLORS.ink;
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-    ctx.restore();
-  },
-};
+  };
+}
 
-// ── Lightning ─────────────────────────────────────────────
-// Brief zigzag bolts flashing top-to-bottom. Fast lifetime, yellow
-// fills with ink outlines. Mirrors Zapdos' Thunderbolt strike energy.
-const lightning: Recipe = {
-  spawnRate: 10,
-  maxParticles: 8,
-  create: (w) => ({
-    x: rand(w * 0.1, w * 0.9),
-    y: -5,
-    vx: rand(-40, 40),
-    vy: rand(180, 260),
-    age: 0,
-    life: rand(0.35, 0.55),
-    size: rand(14, 20),
-    rotation: rand(-0.3, 0.3),
-    vr: 0,
-    fill: COLORS.yellow,
-    data: {},
-  }),
-  update: (p, dt) => {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-  },
-  draw: (ctx, p) => {
-    const t = p.age / p.life;
-    // Strobe-like envelope — snap in, hold, snap out.
-    const a = t < 0.1 ? t / 0.1 : t > 0.7 ? (1 - t) / 0.3 : 1;
-    if (a <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rotation);
-    const s = p.size;
-    // Thick-Z zigzag bolt.
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.3, -s);
-    ctx.lineTo(s * 0.15, -s * 0.25);
-    ctx.lineTo(-s * 0.15, -s * 0.1);
-    ctx.lineTo(s * 0.3, s);
-    ctx.lineTo(-s * 0.05, s * 0.25);
-    ctx.lineTo(s * 0.15, s * 0.1);
-    ctx.closePath();
-    ctx.fillStyle = p.fill;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    ctx.restore();
-  },
-};
+function updateParticle(p: Particle, dt: number): void {
+  p.x += p.vx * dt + Math.sin((p.age + (p.data.a ?? 0)) * 3) * dt * 15;
+  p.y += p.vy * dt;
+  p.vy -= 5 * dt;
+  p.rotation += p.vr * dt;
+}
 
-// ── Psychic ───────────────────────────────────────────────
-// Pulsing orbs with a contrasting inner core. Drift upward slowly.
-// Pink + paper. Echoes Mewtwo / Alakazam's Psybeam halo.
-const psychic: Recipe = {
-  spawnRate: 16,
-  maxParticles: 18,
-  create: (w, h) => ({
-    x: rand(w * 0.15, w * 0.85),
-    y: h + 10,
-    vx: rand(-12, 12),
-    vy: rand(-45, -25),
-    age: 0,
-    life: rand(1.4, 1.9),
-    size: rand(6, 10),
-    rotation: 0,
-    vr: 0,
-    fill: Math.random() < 0.6 ? COLORS.pink : COLORS.paper,
-    data: { a: rand(0, Math.PI * 2) },
-  }),
-  update: (p, dt) => {
-    p.x += p.vx * dt + Math.sin((p.age + (p.data.a ?? 0)) * 2) * dt * 10;
-    p.y += p.vy * dt;
-  },
-  draw: (ctx, p) => {
-    const a = alphaEnvelope(p.age / p.life);
-    if (a <= 0) return;
-    const pulse = 1 + 0.25 * Math.sin(p.age * 8);
-    const s = p.size * pulse;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(p.x, p.y);
-    // Outer orb.
-    ctx.beginPath();
-    ctx.arc(0, 0, s, 0, Math.PI * 2);
-    ctx.fillStyle = p.fill;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    // Inner core — opposite of the outer fill for contrast.
-    ctx.beginPath();
-    ctx.arc(0, 0, s * 0.35, 0, Math.PI * 2);
-    ctx.fillStyle = p.fill === COLORS.pink ? COLORS.paper : COLORS.pink;
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    ctx.restore();
-  },
-};
+/** Build a recipe that renders the given type's vendored sprite with
+ *  the unified leaf motion. Sprites are decoded once; each draw is a
+ *  single translated/rotated `drawImage` call. */
+function buildRecipe(type: ElementalType): Recipe {
+  return {
+    spawnRate: 18,
+    maxParticles: 20,
+    create: createParticle,
+    update: updateParticle,
+    draw: (ctx, p) => {
+      const img = getSprite(type);
+      // Skip until the SVG has decoded. drawImage would throw on an
+      // incomplete image — this short-circuits cleanly.
+      if (!img || !img.complete || img.naturalWidth === 0) return;
 
-// ── Fighting ──────────────────────────────────────────────
-// Burst stars radiating outward from the card centre. Short life,
-// grow over time. Echoes Hitmonlee / Machamp's impact lines.
-const fighting: Recipe = {
-  spawnRate: 22,
-  maxParticles: 14,
-  create: (w, h) => {
-    const angle = rand(0, Math.PI * 2);
-    const speed = rand(80, 140);
-    return {
-      x: w * 0.5,
-      y: h * 0.55,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      age: 0,
-      life: rand(0.5, 0.8),
-      size: rand(6, 10),
-      rotation: angle,
-      vr: rand(-2, 2),
-      fill: Math.random() < 0.5 ? COLORS.yellow : COLORS.pink,
-      data: {},
-    };
-  },
-  update: (p, dt) => {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.vx *= Math.pow(0.3, dt);
-    p.vy *= Math.pow(0.3, dt);
-    p.rotation += p.vr * dt;
-    p.size *= Math.pow(1.2, dt);
-  },
-  draw: (ctx, p) => {
-    const a = alphaEnvelope(p.age / p.life);
-    if (a <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rotation);
-    const s = p.size;
-    // 4-point impact star.
-    ctx.beginPath();
-    ctx.moveTo(0, -s);
-    ctx.lineTo(s * 0.35, -s * 0.35);
-    ctx.lineTo(s, 0);
-    ctx.lineTo(s * 0.35, s * 0.35);
-    ctx.lineTo(0, s);
-    ctx.lineTo(-s * 0.35, s * 0.35);
-    ctx.lineTo(-s, 0);
-    ctx.lineTo(-s * 0.35, -s * 0.35);
-    ctx.closePath();
-    ctx.fillStyle = p.fill;
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    ctx.restore();
-  },
-};
-
-// ── Default fallback ──────────────────────────────────────
-// Neutral sparkles for Colourless / unknown types.
-const defaultRecipe: Recipe = {
-  spawnRate: 14,
-  maxParticles: 14,
-  create: (w, h) => ({
-    x: rand(0, w),
-    y: rand(0, h),
-    vx: rand(-8, 8),
-    vy: rand(-8, 8),
-    age: 0,
-    life: rand(0.9, 1.4),
-    size: rand(3, 6),
-    rotation: rand(0, Math.PI * 2),
-    vr: rand(-0.5, 0.5),
-    fill: COLORS.yellow,
-    data: {},
-  }),
-  update: (p, dt) => {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.rotation += p.vr * dt;
-  },
-  draw: (ctx, p) => {
-    const a = alphaEnvelope(p.age / p.life);
-    if (a <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rotation);
-    const s = p.size;
-    ctx.beginPath();
-    ctx.moveTo(0, -s);
-    ctx.lineTo(s * 0.3, -s * 0.3);
-    ctx.lineTo(s, 0);
-    ctx.lineTo(s * 0.3, s * 0.3);
-    ctx.lineTo(0, s);
-    ctx.lineTo(-s * 0.3, s * 0.3);
-    ctx.lineTo(-s, 0);
-    ctx.lineTo(-s * 0.3, -s * 0.3);
-    ctx.closePath();
-    ctx.fillStyle = p.fill;
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = COLORS.ink;
-    ctx.stroke();
-    ctx.restore();
-  },
-};
+      const a = alphaEnvelope(p.age / p.life);
+      if (a <= 0) return;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      const s = p.size;
+      // Pop-art ink ring surround — sits tight against the disc so
+      // every type sprite reads with the brand's chunky-outline feel
+      // regardless of its own colour palette.
+      ctx.beginPath();
+      ctx.arc(0, 0, s + 0.5, 0, Math.PI * 2);
+      ctx.strokeStyle = COLORS.ink;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.drawImage(img, -s, -s, s * 2, s * 2);
+      ctx.restore();
+    },
+  };
+}
 
 export const RECIPES: Record<ElementalType | "default", Recipe> = {
-  Fire: fire,
-  Water: water,
-  Grass: grass,
-  Lightning: lightning,
-  Psychic: psychic,
-  Fighting: fighting,
-  default: defaultRecipe,
+  Fire: buildRecipe("Fire"),
+  Water: buildRecipe("Water"),
+  Grass: buildRecipe("Grass"),
+  Lightning: buildRecipe("Lightning"),
+  Psychic: buildRecipe("Psychic"),
+  Fighting: buildRecipe("Fighting"),
+  Colorless: buildRecipe("Colorless"),
+  default: buildRecipe("Colorless"),
 };
 
 /** Narrow an arbitrary string (from `Card.types[0]`) into the recipe
- *  keyspace. Anything else returns null and callers can skip rendering
- *  the particle field entirely. */
+ *  keyspace. Anything else returns null and callers skip rendering the
+ *  particle field entirely. */
 export function resolveElementalType(
   raw: string | null | undefined,
 ): ElementalType | null {
@@ -455,6 +193,7 @@ export function resolveElementalType(
     case "Lightning":
     case "Psychic":
     case "Fighting":
+    case "Colorless":
       return raw;
     default:
       return null;
