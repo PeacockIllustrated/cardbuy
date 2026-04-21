@@ -2,12 +2,13 @@ import { redirect } from "next/navigation";
 import {
   BinderPanel,
   type BinderOwnedEntry,
+  type BinderShelfEntry,
   type BinderShopListing,
   type BinderSlotPayload,
 } from "@/components/cardbuy/binder/BinderPanel";
 import { MOCK_LISTINGS } from "@/lib/mock/mock-listings";
 import { getCardById } from "@/lib/fixtures/cards";
-import { GEN1_DEX } from "@/lib/fixtures/pokedex";
+import { NATIONAL_DEX } from "@/lib/fixtures/pokedex";
 import { createClient } from "@/lib/supabase/server";
 import type {
   LewisBinderEntry,
@@ -74,16 +75,46 @@ export default async function BinderPage({
   const binderEntries: LewisBinderEntry[] = binderRes.data ?? [];
   const wishlistEntries: LewisWishlistEntry[] = wishlistRes.data ?? [];
 
-  // Group binder entries by national-dex number via the card fixture.
+  // Group binder entries into two buckets:
+  //   • ownedByDex — Pokémon cards with a national-dex slot
+  //   • shelfEntries — Trainer / Energy / anything without a dex slot,
+  //     destined for the side shelf peeking out of the binder
   const ownedByDex = new Map<number, LewisBinderEntry[]>();
+  const shelfEntries: BinderShelfEntry[] = [];
   for (const e of binderEntries) {
     const card = getCardById(e.card_id);
     const dex = card?.nationalPokedexNumbers?.[0];
-    if (!dex) continue;
-    const list = ownedByDex.get(dex) ?? [];
-    list.push(e);
-    ownedByDex.set(dex, list);
+    const isPokemon = card?.supertype === "Pokémon";
+    if (isPokemon && dex) {
+      const list = ownedByDex.get(dex) ?? [];
+      list.push(e);
+      ownedByDex.set(dex, list);
+    } else if (card) {
+      shelfEntries.push({
+        id: e.id,
+        cardId: e.card_id,
+        cardName: card.name,
+        supertype: card.supertype ?? "Pokémon",
+        subtypes: card.subtypes ?? [],
+        setName: setNameFromId(card.id),
+        rarity: card.rarity ?? null,
+        imageSmall: card.images.small ?? null,
+        variant: e.variant,
+        condition: e.condition ?? undefined,
+        grading_company: e.grading_company ?? undefined,
+        grade: e.grade ?? undefined,
+        quantity: e.quantity,
+      });
+    }
   }
+  // Stable sort for the shelf — Energy first (they're usually the
+  // bulk), then Trainer, alphabetical within each group.
+  shelfEntries.sort((a, b) => {
+    const aw = a.supertype === "Energy" ? 0 : 1;
+    const bw = b.supertype === "Energy" ? 0 : 1;
+    if (aw !== bw) return aw - bw;
+    return a.cardName.localeCompare(b.cardName);
+  });
 
   // Wishlist: lookup by card_id. Binder missing-slot UI reads the
   // dex-registry's sampleCardId when deciding whether to show ON/OFF.
@@ -111,8 +142,8 @@ export default async function BinderPage({
     marketByDex.set(dex, Math.min(...ls.map((l) => l.price_gbp)));
   }
 
-  const totalSlots = GEN1_DEX.length;
-  const totalOwned = GEN1_DEX.filter((d) => ownedByDex.has(d.number)).length;
+  const totalSlots = NATIONAL_DEX.length;
+  const totalOwned = NATIONAL_DEX.filter((d) => ownedByDex.has(d.number)).length;
 
   const totalPages = Math.ceil(totalSlots / SLOTS_PER_PAGE);
   const rawPage = parseInt(params.p ?? "1", 10) || 1;
@@ -122,7 +153,7 @@ export default async function BinderPage({
   );
 
   // Build slot payloads for the full generation — client handles pagination.
-  const allSlots: BinderSlotPayload[] = GEN1_DEX.map((dex) => {
+  const allSlots: BinderSlotPayload[] = NATIONAL_DEX.map((dex) => {
     const entries = ownedByDex.get(dex.number) ?? [];
     const listings = listingsByDex.get(dex.number) ?? [];
     const shopListings: BinderShopListing[] = listings
@@ -240,6 +271,7 @@ export default async function BinderPage({
           totalSlots={totalSlots}
           initialPageIndex={initialPageIndex}
           userDisplayName={displayName}
+          shelfEntries={shelfEntries}
         />
       </div>
     </main>

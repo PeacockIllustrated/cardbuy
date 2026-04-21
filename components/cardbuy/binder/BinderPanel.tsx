@@ -60,6 +60,27 @@ export type BinderOwnedData = {
   entries: BinderOwnedEntry[];
 };
 
+/**
+ * A card the user owns that doesn't belong in the national Pokédex —
+ * Trainer cards, Energy cards, etc. Rendered in the side shelf that
+ * peeks out behind the right-hand page of the binder.
+ */
+export type BinderShelfEntry = {
+  id: string;
+  cardId: string;
+  cardName: string;
+  supertype: string; // "Pokémon" | "Trainer" | "Energy"
+  subtypes: string[];
+  setName: string;
+  rarity: string | null;
+  imageSmall: string | null;
+  variant: "raw" | "graded";
+  condition?: string;
+  grading_company?: string;
+  grade?: string;
+  quantity: number;
+};
+
 export type BinderShopListing = {
   id: string;
   cardName: string;
@@ -94,14 +115,17 @@ export type BinderSlotPayload = {
 };
 
 type Props = {
-  /** All dex slot payloads for the displayed generation (e.g. 151 for Gen 1).
-   *  Client-side pagination lets the page-flip animation play without a
-   *  route change per page. */
+  /** All dex slot payloads for the full national dex. Client-side
+   *  pagination lets the page-flip animation play without a route
+   *  change per page. */
   allSlots: BinderSlotPayload[];
   totalOwned: number;
-  totalSlots: number; // 151 for Gen 1
+  totalSlots: number;
   initialPageIndex: number;
   userDisplayName: string;
+  /** Trainer / Energy / non-Pokémon owned entries, shown on the
+   *  side shelf peeking out from behind the right-hand page. */
+  shelfEntries?: BinderShelfEntry[];
 };
 
 const SLOTS_PER_PAGE = 9;
@@ -137,6 +161,7 @@ export function BinderPanel({
   totalSlots,
   initialPageIndex,
   userDisplayName,
+  shelfEntries,
 }: Props) {
   const totalPages = Math.ceil(allSlots.length / SLOTS_PER_PAGE);
   const [pageIndex, setPageIndex] = useState(
@@ -306,7 +331,21 @@ export function BinderPanel({
 
   return (
     <div ref={panelRef} className="relative">
-      <div className="pop-static rounded-md bg-teal p-2 md:p-2.5">
+      {/* Side shelf — Trainer / Energy / anything without a dex slot.
+          Positioned absolute so it peeks out from behind the binder's
+          right edge. Only rendered when the user actually has non-
+          Pokédex cards, and only from md+ where there's gutter space
+          for it to overhang cleanly. */}
+      {shelfEntries && shelfEntries.length > 0 ? (
+        <div
+          className="hidden md:block absolute top-10 bottom-10 left-[calc(100%-18px)] w-[96px] z-[0]"
+          aria-label="Energy and trainer cards"
+        >
+          <Shelf entries={shelfEntries} />
+        </div>
+      ) : null}
+
+      <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative z-[1]">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.45fr] rounded-sm overflow-hidden border-[2px] border-ink">
           {/* ─── LEFT PAGE · info pane ───────────────────────────── */}
           <section className="relative bg-paper-strong p-5 md:p-6 min-h-[520px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
@@ -348,10 +387,11 @@ export function BinderPanel({
           <section className="relative bg-paper-strong p-4 md:p-5">
             <div className="flex items-baseline justify-between mb-3 md:mb-4 px-1">
               <div
-                className="font-display text-[10px] tracking-[0.2em] text-muted"
+                className="font-display text-[10px] tracking-[0.2em] text-muted tabular-nums"
                 aria-live="polite"
               >
-                Gen 1 · {rangeStart}–{rangeEnd}
+                #{String(rangeStart).padStart(3, "0")}–
+                {String(rangeEnd).padStart(3, "0")}
               </div>
               <div className="font-display text-[10px] tracking-[0.2em] text-muted tabular-nums">
                 {totalOwned} / {totalSlots} owned
@@ -458,6 +498,79 @@ function sliceSlots(
 
 function noop() {}
 
+/* ─────────────────────────────────────────────────────────────────
+ * Side shelf — Trainer / Energy cards that don't belong in the
+ * national Pokédex. Narrow single-column strip attached behind the
+ * binder's right edge, overhanging into the page gutter. Each card
+ * is rendered as a landscape thumbnail (portrait source rotated 90°)
+ * so the shelf can stay compact without cropping.
+ * ───────────────────────────────────────────────────────────────── */
+
+function Shelf({ entries }: { entries: BinderShelfEntry[] }) {
+  return (
+    <div className="h-full pop-static rounded-r-md bg-teal overflow-hidden flex flex-col">
+      <div
+        className="bg-paper-strong border-b-2 border-ink py-1.5 px-1 text-center"
+        title="Energy and trainer cards"
+      >
+        <div className="font-display text-[8px] tracking-[0.2em] text-ink leading-none">
+          ENERGY
+        </div>
+        <div className="font-display text-[8px] tracking-[0.2em] text-ink/60 leading-none mt-0.5">
+          TRAINER
+        </div>
+      </div>
+      <ul className="flex-1 overflow-y-auto scrollbar-none bg-paper/70 p-[5px] flex flex-col gap-[5px]">
+        {entries.map((entry) => (
+          <ShelfCard key={entry.id} entry={entry} />
+        ))}
+      </ul>
+      <div className="bg-paper-strong border-t-2 border-ink py-1 text-center font-display text-[9px] tracking-wider text-ink/70 tabular-nums">
+        {entries.length}
+      </div>
+    </div>
+  );
+}
+
+function ShelfCard({ entry }: { entry: BinderShelfEntry }) {
+  const variant =
+    entry.variant === "graded"
+      ? `${entry.grading_company} ${entry.grade}`
+      : entry.condition ?? "";
+  const toneBg =
+    entry.supertype === "Energy"
+      ? "bg-yellow"
+      : entry.supertype === "Trainer"
+        ? "bg-pink"
+        : "bg-paper-strong";
+  return (
+    <li
+      className={`relative w-full h-[56px] border-2 border-ink rounded-sm overflow-hidden ${toneBg}`}
+      title={`${entry.cardName} · ${entry.setName}${variant ? ` · ${variant}` : ""}`}
+    >
+      {entry.imageSmall ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={entry.imageSmall}
+          alt={entry.cardName}
+          width={56}
+          height={78}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90 max-w-none pointer-events-none"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center font-display text-[8px] tracking-wider text-ink/60 text-center px-1 leading-tight">
+          {entry.cardName}
+        </div>
+      )}
+      {entry.quantity > 1 ? (
+        <span className="absolute top-0.5 right-0.5 bg-teal border-2 border-ink rounded-sm px-1 font-display text-[8px] tabular-nums leading-tight">
+          ×{entry.quantity}
+        </span>
+      ) : null}
+    </li>
+  );
+}
+
 function DexGrid({
   slots,
   activeDex,
@@ -531,7 +644,7 @@ function EmptyState({
         {userDisplayName}&rsquo;s Pokédex
       </div>
       <h2 className="font-display text-[26px] md:text-[32px] leading-[0.95] tracking-tight text-ink mt-1">
-        Generation I
+        National Pokédex
       </h2>
 
       <div className="mt-6">
