@@ -127,6 +127,12 @@ export function ListingCard({
   elementalType,
 }: Props) {
   const [hovered, setHovered] = useState(false);
+  // Mobile has no hover — fall back to the card's own tilt engagement.
+  // A swipe across the card sets `card-3d-engaged` on its wrapper; the
+  // CardImage fires `onEngagedChange` on the flip so we can mirror the
+  // same particle activation here without duplicating gesture logic.
+  const [tilted, setTilted] = useState(false);
+  const particlesActive = hovered || tilted;
   const inStock = listing.qty_in_stock - listing.qty_reserved;
   const soldOut = listing.status === "sold_out" || inStock <= 0;
   const variantLabel =
@@ -197,7 +203,7 @@ export function ListingCard({
          * rogue particles.
          */}
         <div className="absolute -top-12 -left-12 -right-12 -bottom-4 z-[1] overflow-visible pointer-events-none">
-          <ParticleField type={elementalType} active={hovered} />
+          <ParticleField type={elementalType} active={particlesActive} />
         </div>
 
         <div className="relative z-[2]">
@@ -208,6 +214,7 @@ export function ListingCard({
             rarity={listing.rarity}
             interactive
             hideBadge
+            onEngagedChange={setTilted}
           />
           {soldOut ? (
             <span className="absolute -top-2 -right-2 z-[5] bg-warn text-paper-strong border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider rotate-[3deg] pointer-events-none">

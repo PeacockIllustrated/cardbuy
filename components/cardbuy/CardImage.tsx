@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { ImagePlaceholder } from "@/components/wireframe/ImagePlaceholder";
 
 type Size = "sm" | "md" | "lg" | "xl";
@@ -67,6 +73,10 @@ type Props = {
   /** Opt-in on the card detail page: drive tilt from the device gyro when
    *  the finger isn't swiping. On iOS the user must tap a permission chip. */
   enableDeviceTilt?: boolean;
+  /** Fires when the card's `.card-3d-engaged` state flips — used by the
+   *  featured-tile particle field on mobile, where `hover` doesn't
+   *  exist but a swipe-driven tilt should still summon the type FX. */
+  onEngagedChange?: (engaged: boolean) => void;
   className?: string;
 };
 
@@ -172,6 +182,7 @@ export function CardImage({
   static: isStatic = false,
   interactive: interactiveProp,
   enableDeviceTilt = false,
+  onEngagedChange,
   className = "",
 }: Props) {
   const [errored, setErrored] = useState(false);
@@ -183,6 +194,11 @@ export function CardImage({
   const tiltPermissionRef = useRef<TiltPermission>("unknown");
   const smoothRxRef = useRef(0);
   const smoothRyRef = useRef(0);
+  // Stash the caller's callback in a ref so the touch / gyro effects
+  // don't need to re-register when its identity changes.
+  const onEngagedChangeRef = useRef(onEngagedChange);
+  onEngagedChangeRef.current = onEngagedChange;
+  const engagedRef = useRef(false);
   const { w, h, sizes } = DIMS[size];
 
   const interactive = interactiveProp ?? (!isStatic && size !== "sm");
@@ -191,6 +207,24 @@ export function CardImage({
   useEffect(() => {
     tiltPermissionRef.current = tiltPermission;
   }, [tiltPermission]);
+
+  /**
+   * Toggle the `.card-3d-engaged` class AND notify the caller when
+   * the engagement state flips. Using `useCallback` with empty deps
+   * so this function's identity is stable for the component's
+   * lifetime — the touch + gyro effects can close over it without
+   * forcing re-registration.
+   */
+  const pushEngaged = useCallback((flag: boolean) => {
+    const el = outerRef.current;
+    if (!el) return;
+    if (flag) el.classList.add("card-3d-engaged");
+    else el.classList.remove("card-3d-engaged");
+    if (engagedRef.current !== flag) {
+      engagedRef.current = flag;
+      onEngagedChangeRef.current?.(flag);
+    }
+  }, []);
 
   // Detect device-orientation support + whether an iOS-style permission
   // prompt is required. Android / desktop Chrome fire the event without
@@ -229,7 +263,7 @@ export function CardImage({
         // If the gyro is driving the card, the next orientation event
         // will re-apply its own tilt. Otherwise fall back to rest.
         if (tiltPermissionRef.current !== "granted") {
-          el.classList.remove("card-3d-engaged");
+          pushEngaged(false);
           resetTilt(el);
         }
       }
@@ -257,7 +291,7 @@ export function CardImage({
         if (adx > ady) {
           engaged = true;
           swipeActiveRef.current = true;
-          el.classList.add("card-3d-engaged");
+          pushEngaged(true);
           if ("vibrate" in navigator) navigator.vibrate?.(6);
         } else {
           // Vertical intent — stay out of the way, let the page scroll.
@@ -317,7 +351,7 @@ export function CardImage({
         GYRO_LIFT_PX,
         GYRO_SCALE,
       );
-      el.classList.add("card-3d-engaged");
+      pushEngaged(true);
     };
 
     window.addEventListener("deviceorientation", onOrient);
@@ -325,7 +359,7 @@ export function CardImage({
       window.removeEventListener("deviceorientation", onOrient);
       // Only reset if the swipe isn't currently owning the transform.
       if (!swipeActiveRef.current) {
-        el.classList.remove("card-3d-engaged");
+        pushEngaged(false);
         resetTilt(el);
       }
     };
