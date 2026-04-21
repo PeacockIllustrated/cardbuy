@@ -33,6 +33,13 @@ export interface LewisUser {
   country: string | null;
   role: "seller" | "admin";
   paypal_email: string | null;
+  // Phase 6 · Slice C1 · granular consent (UK GDPR/PECR).
+  consent_service_emails: boolean;
+  consent_marketing_buylist: boolean;
+  consent_marketing_shop: boolean;
+  consent_aggregate_data: boolean;
+  consent_updated_at: string | null;
+  privacy_policy_accepted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,6 +122,143 @@ export interface LewisSubmissionItem {
   created_at: string;
 }
 
+/* ─────────────────────────────────────────────────────────────────
+ * Phase 6 · Binder (Slice A). Mirrors
+ * `supabase/migrations/0006_phase6_binder.sql`.
+ * ───────────────────────────────────────────────────────────────── */
+
+export type BinderEntrySource = "manual" | "shop_order" | "import";
+
+export interface LewisBinderEntry {
+  id: string;
+  user_id: string;
+  card_id: string;
+  variant: ItemVariant;
+  /** Required when variant='raw', null when variant='graded'. */
+  condition: ItemCondition | null;
+  /** Required when variant='graded', null when variant='raw'. */
+  grading_company: GradingCompany | null;
+  /** Required when variant='graded', null when variant='raw'. */
+  grade: Grade | null;
+  quantity: number;
+  is_grail: boolean;
+  note: string | null;
+  acquired_at: string;
+  /** How this row got into the binder. Slice B1 added the column;
+   *  Slice B2 populates 'shop_order' when checkout auto-add fires. */
+  source: BinderEntrySource;
+  /** Loose pointer to `lewis_orders.id`. Becomes an FK in the Phase 7
+   *  shop-persistence migration. Null for manual entries. */
+  source_order_id: string | null;
+  /** Slice D · storage path (not a full URL) to the framed slab scan,
+   *  if the entry was created via the camera capture. Null for manual
+   *  adds. Resolve to a signed URL via the admin/storage helpers. */
+  graded_image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LewisWishlistEntry {
+  id: string;
+  user_id: string;
+  card_id: string;
+  target_price_gbp: number | null;
+  notified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Phase 7 · Shop persistence. Mirrors
+ * `supabase/migrations/0010_phase7_shop.sql`.
+ * ───────────────────────────────────────────────────────────────── */
+
+export type ListingStatus = "active" | "hidden" | "sold_out";
+export type ShopOrderStatus =
+  | "pending_payment"
+  | "paid"
+  | "packing"
+  | "shipped"
+  | "delivered"
+  | "refunded"
+  | "cancelled";
+export type PaymentMethod = "stripe_card" | "paypal_in" | "stub";
+export type ShippingMethodOption =
+  | "royal_mail_tracked"
+  | "royal_mail_special";
+
+export interface ShippingAddress {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  postcode: string;
+  country: string;
+}
+
+export interface LewisListing {
+  id: string;
+  card_id: string;
+  sku: string;
+  variant: ItemVariant;
+  condition: ItemCondition | null;
+  grading_company: GradingCompany | null;
+  grade: Grade | null;
+  price_gbp: number;
+  cost_basis_gbp: number;
+  qty_in_stock: number;
+  qty_reserved: number;
+  status: ListingStatus;
+  is_featured: boolean;
+  featured_priority: number | null;
+  condition_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LewisOrder {
+  id: string;
+  reference: string;
+  buyer_id: string | null;
+  buyer_email: string;
+  buyer_name: string;
+  status: ShopOrderStatus;
+  subtotal_gbp: number;
+  shipping_gbp: number;
+  total_gbp: number;
+  payment_method: PaymentMethod;
+  shipping_method: ShippingMethodOption;
+  shipping_address: ShippingAddress;
+  tracking_number: string | null;
+  add_to_binder_opt_in: boolean;
+  binder_entries_created_at: string | null;
+  placed_at: string;
+  paid_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  cancelled_at: string | null;
+  notes_internal: string | null;
+  notes_buyer: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LewisOrderItem {
+  id: string;
+  order_id: string;
+  listing_id: string;
+  card_id: string;
+  card_name: string;
+  set_name: string;
+  variant: ItemVariant;
+  condition: ItemCondition | null;
+  grading_company: GradingCompany | null;
+  grade: Grade | null;
+  qty: number;
+  unit_price_gbp: number;
+  line_total_gbp: number;
+  created_at: string;
+}
+
 /**
  * Minimal Database shape consumed by `createClient<Database>()`. We only
  * enumerate the tables this phase touches. Phase 2b extends it when
@@ -153,6 +297,67 @@ export type Database = {
           offer_breakdown?: Record<string, unknown>;
         };
         Update: Partial<LewisSubmissionItem>;
+        Relationships: [];
+      };
+      lewis_binder_entries: {
+        Row: LewisBinderEntry;
+        Insert: Omit<
+          LewisBinderEntry,
+          "id" | "created_at" | "updated_at" | "acquired_at"
+        > & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          acquired_at?: string;
+        };
+        Update: Partial<LewisBinderEntry>;
+        Relationships: [];
+      };
+      lewis_wishlist_entries: {
+        Row: LewisWishlistEntry;
+        Insert: Omit<
+          LewisWishlistEntry,
+          "id" | "created_at" | "updated_at"
+        > & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<LewisWishlistEntry>;
+        Relationships: [];
+      };
+      lewis_listings: {
+        Row: LewisListing;
+        Insert: Omit<LewisListing, "id" | "created_at" | "updated_at"> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<LewisListing>;
+        Relationships: [];
+      };
+      lewis_orders: {
+        Row: LewisOrder;
+        Insert: Omit<
+          LewisOrder,
+          "id" | "reference" | "placed_at" | "created_at" | "updated_at"
+        > & {
+          id?: string;
+          reference?: string;
+          placed_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<LewisOrder>;
+        Relationships: [];
+      };
+      lewis_order_items: {
+        Row: LewisOrderItem;
+        Insert: Omit<LewisOrderItem, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<LewisOrderItem>;
         Relationships: [];
       };
     };

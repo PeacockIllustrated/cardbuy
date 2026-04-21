@@ -36,6 +36,9 @@ export default function AdminLayout({
               <AdminLink href="/admin/orders" tone="pink">Orders</AdminLink>
             </Group>
             <Divider />
+            <AdminLink href="/admin/demand" tone="pink">Demand</AdminLink>
+            <AdminLink href="/admin/sourcing" tone="pink">Sourcing</AdminLink>
+            <Divider />
             <AdminLink href="/admin/cards" tone="teal">Catalogue</AdminLink>
             <AdminLink href="/admin/sync" tone="teal">Sync</AdminLink>
             <Divider />
@@ -61,6 +64,8 @@ export default function AdminLayout({
               <MobileSection>Sell</MobileSection>
               <MobileLink href="/admin/inventory" tone="pink">Inventory</MobileLink>
               <MobileLink href="/admin/orders" tone="pink">Orders</MobileLink>
+              <MobileLink href="/admin/demand" tone="pink">Demand</MobileLink>
+              <MobileLink href="/admin/sourcing" tone="pink">Sourcing</MobileLink>
               <MobileSection>Catalogue</MobileSection>
               <MobileLink href="/admin/cards" tone="teal">Cards</MobileLink>
               <MobileLink href="/admin/sync" tone="teal">Sync</MobileLink>

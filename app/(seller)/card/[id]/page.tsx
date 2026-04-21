@@ -3,21 +3,35 @@ import Link from "next/link";
 import { getCardById, setOf } from "@/lib/fixtures/cards";
 import { getMockCardById } from "@/lib/fixtures/mock-adapter";
 import { OfferBuilder } from "@/components/cardbuy/OfferBuilder";
+import { BinderChipRow } from "@/components/cardbuy/binder/BinderChipRow";
 import { CardImage } from "@/components/cardbuy/CardImage";
 import { EnergyChip, EnergyCostRow } from "@/components/cardbuy/EnergyChip";
 import { Annotation } from "@/components/wireframe/Annotation";
 import { createClient } from "@/lib/supabase/server";
+import { getCardBinderStatus } from "@/app/_actions/binder";
 import { getMarginConfig } from "@/app/_actions/margins";
-import {
-  getLatestPricesForCard,
-  pickHeadlinePrice,
-} from "@/app/_actions/prices";
+import { getLatestPricesForCard } from "@/app/_actions/prices";
+import { pickHeadlinePrice } from "@/lib/prices/types";
+import { PriceSourceChip } from "@/components/cardbuy/PriceSourceChip";
 import type { Condition, MockCard } from "@/lib/mock/types";
 
 type Params = Promise<{ id: string }>;
+type SearchParams = Promise<{
+  prefill_variant?: string;
+  prefill_condition?: string;
+  prefill_company?: string;
+  prefill_grade?: string;
+}>;
 
-export default async function CardDetailPage({ params }: { params: Params }) {
+export default async function CardDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
   const card = getCardById(id);
   const mockCard = getMockCardById(id);
   if (!card || !mockCard) notFound();
@@ -25,16 +39,35 @@ export default async function CardDetailPage({ params }: { params: Params }) {
   const set = setOf(card);
 
   const supabase = await createClient();
-  const [{ data: { user } }, marginConfig, livePrices] = await Promise.all([
+  const [{ data: { user } }, marginConfig, livePrices, binderStatus, mapRow] = await Promise.all([
     supabase.auth.getUser(),
     getMarginConfig(),
     getLatestPricesForCard(id),
+    getCardBinderStatus(id),
+    supabase
+      .from("lewis_card_tcg_map")
+      .select("card_id")
+      .eq("card_id", id)
+      .maybeSingle(),
   ]);
+
+  // Admin gate for the "not mapped" hint — avoid leaking internal
+  // state to regular sellers. Uses the same role check pattern as
+  // admin-only action gates elsewhere.
+  let isAdmin = false;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("lewis_users")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    isAdmin = (profile as { role?: string } | null)?.role === "admin";
+  }
 
   // If the nightly sync has covered this card, override the mock USD
   // baseline with the live TCGplayer market price. Condition
   // multipliers in the margin config still discount it from there.
-  const headline = await pickHeadlinePrice(livePrices);
+  const headline = pickHeadlinePrice(livePrices);
   const liveCard: MockCard = headline?.price_market
     ? (() => {
         const live = Number(headline.price_market);
@@ -179,32 +212,56 @@ export default async function CardDetailPage({ params }: { params: Params }) {
             ) : null}
           </header>
 
+          <BinderChipRow
+            cardId={id}
+            cardName={card.name}
+            isAuthenticated={Boolean(user)}
+            initialEntries={binderStatus.entries}
+            initialOnWishlist={binderStatus.onWishlist}
+          />
+
+          <PriceSourceChip
+            status={priceSource}
+            variant={headline?.variant ?? null}
+            marketUsd={
+              headline?.price_market !== undefined &&
+              headline.price_market !== null
+                ? Number(headline.price_market)
+                : null
+            }
+            sourceUpdatedAt={
+              headline?.source_updated_at ?? headline?.fetched_at ?? null
+            }
+            adminUnmappedHint={
+              isAdmin && priceSource === "mock" && !mapRow.data
+            }
+          />
+
           <OfferBuilder
             card={liveCard}
             config={marginConfig}
             isAuthenticated={Boolean(user)}
+            prefill={{
+              variant:
+                sp.prefill_variant === "graded" ? "graded" : undefined,
+              condition: sp.prefill_condition as Condition | undefined,
+              company: sp.prefill_company as
+                | "PSA"
+                | "CGC"
+                | "BGS"
+                | "SGC"
+                | "ACE"
+                | undefined,
+              grade: sp.prefill_grade as
+                | "10"
+                | "9.5"
+                | "9"
+                | "8.5"
+                | "8"
+                | "7"
+                | undefined,
+            }}
           />
-          <p className="text-[11px] text-muted font-display tracking-wider">
-            {priceSource === "live" ? (
-              <>
-                Live price · TCGplayer{" "}
-                <code className="font-mono">
-                  ${Number(headline?.price_market ?? 0).toFixed(2)}
-                </code>{" "}
-                ({headline?.variant}) ·{" "}
-                {headline?.source_updated_at
-                  ? new Date(headline.source_updated_at)
-                      .toISOString()
-                      .slice(0, 10)
-                  : "—"}
-              </>
-            ) : (
-              <>
-                Mock baseline · live TCGplayer feed coverage lands once
-                the sync runs (Phase 2b.2).
-              </>
-            )}
-          </p>
 
           {/* Abilities */}
           {card.abilities && card.abilities.length > 0 ? (

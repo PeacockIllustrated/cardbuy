@@ -84,6 +84,14 @@ input[type="number"] {
   background: var(--color-paper-strong);
 }
 
+/* Static version of pop-block — same outline + offset shadow, but no
+ * hover lift or active press. Use on large decorative frames (e.g. the
+ * binder shell) where the whole-surface "press" looks wrong on click. */
+.pop-static {
+  border: 3px solid var(--color-ink);
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+}
+
 /* Rule between table rows on cream — needs to be ink-tinted, not grey */
 .pop-rule {
   border-color: var(--color-ink);
@@ -535,4 +543,75 @@ input[type="number"] {
 }
 .scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+
+/* ----------------------------------------------------------------
+ * Binder page flip — a 3D rotateY around the spine axis, giving the
+ * right page of a 3-ring binder a tactile turn. Used by the Pokédex
+ * binder's prev/next page navigation.
+ *
+ * Dual-page model: the base grid (already rendered) holds the page
+ * that should be visible AFTER the flip settles, while an absolutely
+ * positioned overlay holds the page being flipped. `backface-visibility`
+ * hides the overlay's back half so the base reveals through.
+ *
+ *   forward (next): overlay = outgoing page, rotates 0 → -180deg
+ *   backward (prev): overlay = incoming page, rotates -180 → 0deg
+ *
+ * The stage applies perspective so the rotation reads as a page lifting
+ * off the binder rather than a flat flip.
+ * ----------------------------------------------------------------*/
+.binder-flip-stage {
+  perspective: 2000px;
+  perspective-origin: 0% 50%;
+  transform-style: preserve-3d;
+}
+
+.binder-flip-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 0% 50%;
+  backface-visibility: hidden;
+  /* Pure transform keyframes — no filter, no shadow — so the compositor
+   * can keep the animation on the GPU and hit 60fps. */
+  will-change: transform;
+}
+
+/* Both directions use the same ease-out-quart and only traverse the *visible*
+ * half of the flip (0° ↔ -90°). The back-facing half is skipped entirely —
+ * the overlay unmounts at edge-on and the base page (already rendered behind)
+ * is what the user sees after the animation. Truncating this way makes next
+ * and prev genuinely symmetric: both are 780ms of decelerating, fully-visible
+ * motion ending in a soft settle. */
+.binder-flip-next,
+.binder-flip-prev {
+  animation-duration: 780ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: forwards;
+}
+.binder-flip-next { animation-name: binder-flip-next; }
+.binder-flip-prev { animation-name: binder-flip-prev; }
+
+@keyframes binder-flip-next {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(-90deg); }
+}
+
+@keyframes binder-flip-prev {
+  from { transform: rotateY(-90deg); }
+  to   { transform: rotateY(0deg); }
+}
+
+/* During a flip the stage swallows pointer events so hover/focus doesn't
+ * fire on slots that are mid-rotation and invisible. */
+.binder-flip-locked {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .binder-flip-next,
+  .binder-flip-prev {
+    animation: none !important;
+  }
 }

@@ -23,16 +23,34 @@ type Props = {
   config: MockMarginConfig;
   /** Current auth state — drives the CTA label and action target. */
   isAuthenticated: boolean;
+  /** Initial selection, driven by `?prefill_*` query params (used by the
+   *  binder's "Sell this card" action so the picker lands pre-configured). */
+  prefill?: {
+    variant?: "raw" | "graded";
+    condition?: Condition;
+    company?: GradingCompany;
+    grade?: Grade;
+  };
 };
 
-export function OfferBuilder({ card, config, isAuthenticated }: Props) {
+export function OfferBuilder({
+  card,
+  config,
+  isAuthenticated,
+  prefill,
+}: Props) {
   const hasGraded = Object.keys(card.graded_prices).length > 0;
-  const [variant, setVariant] = useState<"raw" | "graded">("raw");
-  const [condition, setCondition] = useState<Condition>("NM");
-  const [company, setCompany] = useState<GradingCompany>(
-    (Object.keys(card.graded_prices)[0] as GradingCompany) ?? "PSA",
+  const [variant, setVariant] = useState<"raw" | "graded">(
+    prefill?.variant ?? "raw",
   );
-  const [grade, setGrade] = useState<Grade>("10");
+  const [condition, setCondition] = useState<Condition>(
+    prefill?.condition ?? "NM",
+  );
+  const [company, setCompany] = useState<GradingCompany>(
+    prefill?.company ??
+      ((Object.keys(card.graded_prices)[0] as GradingCompany) ?? "PSA"),
+  );
+  const [grade, setGrade] = useState<Grade>(prefill?.grade ?? "10");
   const [qty, setQty] = useState(1);
   const [pending, startTransition] = useTransition();
   const [added, setAdded] = useState(false);

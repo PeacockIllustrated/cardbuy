@@ -32,6 +32,7 @@ export async function SellerNav() {
         <nav className="flex items-center gap-0.5 md:gap-1 font-display text-[11px] md:text-[12px] tracking-wider min-w-0">
           <NavLink href="/shop" tone="pink">Shop</NavLink>
           <NavLink href="/packs" tone="yellow">Sell</NavLink>
+          <NavLink href="/binder" tone="teal" hideOnNarrow>Binder</NavLink>
           <NavLink href="/submission" tone="teal" hideOnNarrow>
             <span className="md:hidden">Cart</span>
             <span className="hidden md:inline">My&nbsp;sub</span>
@@ -40,12 +41,13 @@ export async function SellerNav() {
 
           {user ? (
             <div className="hidden sm:flex items-center gap-2 shrink-0 ml-1 md:ml-2 pl-2 md:pl-3 border-l-2 border-ink/15">
-              <span
-                className="font-display text-[10px] text-muted tabular-nums truncate max-w-[140px]"
+              <Link
+                href="/settings"
+                className="font-display text-[10px] text-muted tabular-nums truncate max-w-[140px] hover:text-ink"
                 title={user.email ?? ""}
               >
                 {user.email}
-              </span>
+              </Link>
               <form action={signOut}>
                 <button
                   type="submit"
