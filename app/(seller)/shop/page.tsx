@@ -1,8 +1,11 @@
 import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { Button, Field, Input, Select } from "@/components/ui/Form";
 import { ListingCard } from "@/components/cardbuy/ListingCard";
-import { MOCK_LISTINGS, getFeaturedListings } from "@/lib/mock/mock-listings";
+import { listListings } from "@/app/_actions/shop";
+import { adaptListing } from "@/lib/shop/adapter";
 import type { MockListing } from "@/lib/mock/types";
+
+export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{
   set?: string;
@@ -15,20 +18,20 @@ type SearchParams = Promise<{
   sort?: "featured" | "newest" | "price_asc" | "price_desc";
 }>;
 
-const SETS = Array.from(
-  new Map(MOCK_LISTINGS.map((l) => [l.set_name, l.set_name])).entries()
-);
-const RARITIES = Array.from(new Set(MOCK_LISTINGS.map((l) => l.rarity)));
-
-function applyFilters(rows: MockListing[], sp: Awaited<SearchParams>): MockListing[] {
+function applyFilters(
+  rows: MockListing[],
+  sp: Awaited<SearchParams>,
+): MockListing[] {
   let out = rows.filter((l) => l.status === "active");
   if (sp.set) out = out.filter((l) => l.set_name === sp.set);
   if (sp.rarity) out = out.filter((l) => l.rarity === sp.rarity);
   if (sp.variant) out = out.filter((l) => l.variant === sp.variant);
-  if (sp.cond && sp.variant !== "graded") out = out.filter((l) => l.condition === sp.cond);
+  if (sp.cond && sp.variant !== "graded")
+    out = out.filter((l) => l.condition === sp.cond);
   if (sp.pmin) out = out.filter((l) => l.price_gbp >= Number(sp.pmin));
   if (sp.pmax) out = out.filter((l) => l.price_gbp <= Number(sp.pmax));
-  if (sp.in_stock === "1") out = out.filter((l) => l.qty_in_stock - l.qty_reserved > 0);
+  if (sp.in_stock === "1")
+    out = out.filter((l) => l.qty_in_stock - l.qty_reserved > 0);
 
   switch (sp.sort) {
     case "newest":
@@ -55,8 +58,20 @@ export default async function ShopPage({
   searchParams: SearchParams;
 }) {
   const sp = await searchParams;
-  const featured = getFeaturedListings(4);
-  const results = applyFilters(MOCK_LISTINGS, sp);
+  const raw = await listListings();
+  const listings = raw.map(adaptListing);
+
+  const setNames = Array.from(new Set(listings.map((l) => l.set_name)));
+  const rarities = Array.from(new Set(listings.map((l) => l.rarity)));
+
+  const featured = listings
+    .filter((l) => l.is_featured && l.qty_in_stock - l.qty_reserved > 0)
+    .sort(
+      (a, b) => (a.featured_priority ?? 99) - (b.featured_priority ?? 99),
+    )
+    .slice(0, 4);
+
+  const results = applyFilters(listings, sp);
 
   return (
     <div className="max-w-[1300px] mx-auto px-4 py-8 flex flex-col gap-8">
@@ -68,12 +83,12 @@ export default async function ShopPage({
           Browse Lewis&apos;s picks
         </h1>
         <p className="text-secondary text-[14px] max-w-[60ch]">
-          Hand-picked Pokémon cards — raw and graded. Free Royal Mail Tracked over £250. UK
-          dispatch within one working day. <TodoMarker phase={4}>real Stripe checkout</TodoMarker>
+          Hand-picked Pokémon cards — raw and graded. Free Royal Mail
+          Tracked over £250. UK dispatch within one working day.{" "}
+          <TodoMarker phase={4}>real Stripe checkout</TodoMarker>
         </p>
       </header>
 
-      {/* Featured rail */}
       {featured.length > 0 ? (
         <section className="bg-yellow border-[3px] border-ink rounded-lg p-5 flex flex-col gap-4">
           <h2 className="font-display text-[20px] tracking-tight leading-none">
@@ -93,7 +108,6 @@ export default async function ShopPage({
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
-        {/* FILTER SIDEBAR — collapsed-by-default disclosure on mobile, always-open on md+ */}
         <aside className="pop-card rounded-md h-fit overflow-hidden">
           <details className="md:contents">
             <summary className="md:hidden cursor-pointer list-none px-4 py-3 flex items-center justify-between border-b-2 border-ink font-display text-[14px] tracking-wider hover:bg-yellow/30">
@@ -101,83 +115,99 @@ export default async function ShopPage({
               <span className="text-[11px] text-muted">tap to toggle</span>
             </summary>
             <div className="p-4 flex flex-col gap-4">
-              <h2 className="hidden md:block font-display text-[14px] tracking-wider">Filters</h2>
-          <form action="/shop" method="GET" className="flex flex-col gap-3">
-            <Field label="Set">
-              <Select name="set" defaultValue={sp.set ?? ""}>
-                <option value="">All sets</option>
-                {SETS.map(([name]) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Rarity">
-              <Select name="rarity" defaultValue={sp.rarity ?? ""}>
-                <option value="">Any rarity</option>
-                {RARITIES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Variant">
-              <Select name="variant" defaultValue={sp.variant ?? ""}>
-                <option value="">Raw or graded</option>
-                <option value="raw">Raw only</option>
-                <option value="graded">Graded only</option>
-              </Select>
-            </Field>
-            <Field label="Condition (raw)">
-              <Select name="cond" defaultValue={sp.cond ?? ""}>
-                <option value="">Any</option>
-                <option value="NM">NM</option>
-                <option value="LP">LP</option>
-                <option value="MP">MP</option>
-                <option value="HP">HP</option>
-                <option value="DMG">DMG</option>
-              </Select>
-            </Field>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Min £">
-                <Input name="pmin" type="number" defaultValue={sp.pmin ?? ""} className="w-full" />
-              </Field>
-              <Field label="Max £">
-                <Input name="pmax" type="number" defaultValue={sp.pmax ?? ""} className="w-full" />
-              </Field>
-            </div>
-            <label className="flex items-center gap-2 text-[12px]">
-              <input
-                type="checkbox"
-                name="in_stock"
-                value="1"
-                defaultChecked={sp.in_stock === "1"}
-              />
-              In stock only
-            </label>
-            <Field label="Sort">
-              <Select name="sort" defaultValue={sp.sort ?? "featured"}>
-                <option value="featured">Featured first</option>
-                <option value="newest">Newest</option>
-                <option value="price_asc">Price ↑</option>
-                <option value="price_desc">Price ↓</option>
-              </Select>
-            </Field>
-            <Button type="submit" variant="secondary" size="sm" className="w-full">
-              Apply filters
-            </Button>
-          </form>
+              <h2 className="hidden md:block font-display text-[14px] tracking-wider">
+                Filters
+              </h2>
+              <form action="/shop" method="GET" className="flex flex-col gap-3">
+                <Field label="Set">
+                  <Select name="set" defaultValue={sp.set ?? ""}>
+                    <option value="">All sets</option>
+                    {setNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Rarity">
+                  <Select name="rarity" defaultValue={sp.rarity ?? ""}>
+                    <option value="">Any rarity</option>
+                    {rarities.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Variant">
+                  <Select name="variant" defaultValue={sp.variant ?? ""}>
+                    <option value="">Raw or graded</option>
+                    <option value="raw">Raw only</option>
+                    <option value="graded">Graded only</option>
+                  </Select>
+                </Field>
+                <Field label="Condition (raw)">
+                  <Select name="cond" defaultValue={sp.cond ?? ""}>
+                    <option value="">Any</option>
+                    <option value="NM">NM</option>
+                    <option value="LP">LP</option>
+                    <option value="MP">MP</option>
+                    <option value="HP">HP</option>
+                    <option value="DMG">DMG</option>
+                  </Select>
+                </Field>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Min £">
+                    <Input
+                      name="pmin"
+                      type="number"
+                      defaultValue={sp.pmin ?? ""}
+                      className="w-full"
+                    />
+                  </Field>
+                  <Field label="Max £">
+                    <Input
+                      name="pmax"
+                      type="number"
+                      defaultValue={sp.pmax ?? ""}
+                      className="w-full"
+                    />
+                  </Field>
+                </div>
+                <label className="flex items-center gap-2 text-[12px]">
+                  <input
+                    type="checkbox"
+                    name="in_stock"
+                    value="1"
+                    defaultChecked={sp.in_stock === "1"}
+                  />
+                  In stock only
+                </label>
+                <Field label="Sort">
+                  <Select name="sort" defaultValue={sp.sort ?? "featured"}>
+                    <option value="featured">Featured first</option>
+                    <option value="newest">Newest</option>
+                    <option value="price_asc">Price ↑</option>
+                    <option value="price_desc">Price ↓</option>
+                  </Select>
+                </Field>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
+                >
+                  Apply filters
+                </Button>
+              </form>
             </div>
           </details>
         </aside>
 
-        {/* RESULTS */}
         <section className="flex flex-col gap-4">
           <div className="flex items-baseline justify-between">
             <h2 className="font-display text-[16px] tracking-wider">
-              {results.length} of {MOCK_LISTINGS.filter((l) => l.status === "active").length} listings
+              {results.length} of {listings.length} listings
             </h2>
           </div>
 
