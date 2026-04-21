@@ -77,6 +77,21 @@ const SPRITE_PATHS: Record<ElementalType, string> = {
   Colorless: "/icons/types/colorless.svg",
 };
 
+/** Per-type brand-accent colour. Exported for React components that
+ *  want to tint things (e.g. the starburst drop-shadow behind a
+ *  featured tile) to match whichever particle set is active for that
+ *  card. Pink/teal/yellow mapping keeps the accents on-brand while
+ *  still differentiating types. */
+export const TYPE_GLOW_HEX: Record<ElementalType, string> = {
+  Fire: COLORS.pink,
+  Water: COLORS.teal,
+  Grass: COLORS.teal,
+  Lightning: COLORS.yellow,
+  Psychic: COLORS.pink,
+  Fighting: COLORS.yellow,
+  Colorless: COLORS.paper,
+};
+
 /** Lazy per-page sprite cache. Created on first access to each type,
  *  reused across every particle and every tile thereafter. */
 const spriteCache = new Map<ElementalType, HTMLImageElement>();
@@ -93,10 +108,13 @@ function getSprite(type: ElementalType): HTMLImageElement | null {
   return img;
 }
 
-/** Alpha envelope: fade in first 15%, hold, fade out last 30%. */
+/** Alpha envelope: fade in first 15%, hold, fade out last 45%.
+ *  Longer fade-out than the old spec so particles approaching the
+ *  canvas edge are already well on their way to zero alpha by the
+ *  time they clip — no visible edge cut-off. */
 function alphaEnvelope(t: number): number {
   if (t < 0.15) return t / 0.15;
-  if (t > 0.7) return Math.max(0, (1 - t) / 0.3);
+  if (t > 0.55) return Math.max(0, (1 - t) / 0.45);
   return 1;
 }
 
@@ -104,33 +122,94 @@ function rand(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-/** The one motion profile all types share — derived from the original
- *  Grass recipe. Particles spawn along the bottom, drift up with a
- *  horizontal sway, rotate freely, and fade. */
+/** Approximate rectangle of the card within the particle canvas.
+ *  The particle canvas in `ListingCard` is sized LARGER than the
+ *  burst well (via negative insets) so particles can spill out of
+ *  the tile and fade freely — that means the card-image rect covers
+ *  a smaller fraction of the canvas than it did of the well.
+ *
+ *  Numbers are fractions of the canvas width/height. */
+const CARD_RECT = {
+  cxFrac: 0.5,
+  cyFrac: 0.5,
+  halfWFrac: 0.25,
+  halfHFrac: 0.33,
+} as const;
+
+/** Single motion profile shared across every type. Particles spawn on
+ *  one of the four card-rect edges and shoot outward; a light drag on
+ *  each frame softens them toward end-of-life so the fade-out lines
+ *  up visually with them slowing down. */
 function createParticle(w: number, h: number): Particle {
+  const cx = w * CARD_RECT.cxFrac;
+  const cy = h * CARD_RECT.cyFrac;
+  const halfW = w * CARD_RECT.halfWFrac;
+  const halfH = h * CARD_RECT.halfHFrac;
+
+  const speed = rand(32, 68);
+  // 4 sides, equal weight — top, right, bottom, left.
+  const side = Math.floor(Math.random() * 4);
+  let x: number;
+  let y: number;
+  let vx: number;
+  let vy: number;
+  switch (side) {
+    case 0: // TOP — fire upward
+      x = cx + rand(-halfW, halfW);
+      y = cy - halfH;
+      vx = rand(-16, 16);
+      vy = -speed;
+      break;
+    case 1: // RIGHT — fire rightward
+      x = cx + halfW;
+      y = cy + rand(-halfH, halfH);
+      vx = speed;
+      vy = rand(-14, 14);
+      break;
+    case 2: // BOTTOM — fire downward
+      x = cx + rand(-halfW, halfW);
+      y = cy + halfH;
+      vx = rand(-16, 16);
+      vy = speed;
+      break;
+    default: // LEFT — fire leftward
+      x = cx - halfW;
+      y = cy + rand(-halfH, halfH);
+      vx = -speed;
+      vy = rand(-14, 14);
+      break;
+  }
+
   return {
-    x: rand(w * 0.1, w * 0.9),
-    y: h + 8,
-    vx: rand(-15, 15),
-    vy: rand(-50, -28),
+    x,
+    y,
+    vx,
+    vy,
     age: 0,
     life: rand(1.3, 1.9),
-    // Larger than the original leaf shape — SVG sprites read smaller
-    // at the same "radius" because the pictogram only fills ~60% of
-    // the disc, so bump to compensate.
-    size: rand(11, 17),
+    // Slightly smaller than last pass — the glow halo visually bumps
+    // the footprint, so shrinking the sprite keeps the overall bloom
+    // in check.
+    size: rand(9, 14),
     rotation: rand(0, Math.PI * 2),
-    vr: rand(-1.4, 1.4),
+    vr: rand(-1.0, 1.0),
     fill: "",
     data: { a: rand(0, Math.PI * 2) },
   };
 }
 
 function updateParticle(p: Particle, dt: number): void {
-  p.x += p.vx * dt + Math.sin((p.age + (p.data.a ?? 0)) * 3) * dt * 15;
+  p.x += p.vx * dt;
   p.y += p.vy * dt;
-  p.vy -= 5 * dt;
   p.rotation += p.vr * dt;
+  // Exponential drag — velocities decay toward zero so the trailing
+  // portion of each life slows visibly, giving the fade-out a
+  // physically-natural "settle" feel instead of linear drift. Light
+  // value so the slower base speeds still drift meaningfully instead
+  // of parking near the card.
+  const drag = Math.pow(0.85, dt);
+  p.vx *= drag;
+  p.vy *= drag;
 }
 
 /** Build a recipe that renders the given type's vendored sprite with
@@ -138,8 +217,10 @@ function updateParticle(p: Particle, dt: number): void {
  *  single translated/rotated `drawImage` call. */
 function buildRecipe(type: ElementalType): Recipe {
   return {
-    spawnRate: 18,
-    maxParticles: 20,
+    // Tuned for the card-perimeter emission pattern: enough bursts to
+    // feel energetic from every side without frame-budget concern.
+    spawnRate: 22,
+    maxParticles: 22,
     create: createParticle,
     update: updateParticle,
     draw: (ctx, p) => {
@@ -155,15 +236,15 @@ function buildRecipe(type: ElementalType): Recipe {
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rotation);
       const s = p.size;
-      // Pop-art ink ring surround — sits tight against the disc so
-      // every type sprite reads with the brand's chunky-outline feel
-      // regardless of its own colour palette.
+
+      ctx.drawImage(img, -s, -s, s * 2, s * 2);
+
+      // Pop-art ink ring surround — cleanly defines the sprite's edge.
       ctx.beginPath();
       ctx.arc(0, 0, s + 0.5, 0, Math.PI * 2);
       ctx.strokeStyle = COLORS.ink;
       ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.drawImage(img, -s, -s, s * 2, s * 2);
       ctx.restore();
     },
   };

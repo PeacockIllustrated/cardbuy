@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { MockListing } from "@/lib/mock/types";
 import { CardImage } from "@/components/cardbuy/CardImage";
 import { formatGBP } from "@/lib/mock/mock-offer";
 import { ParticleField } from "@/components/cardbuy/particles/ParticleField";
-import type { ElementalType } from "@/components/cardbuy/particles/recipes";
+import {
+  TYPE_GLOW_HEX,
+  type ElementalType,
+} from "@/components/cardbuy/particles/recipes";
 
 type Props = {
   listing: MockListing;
@@ -132,6 +135,10 @@ export function ListingCard({
       : `Graded · ${listing.grading_company} ${listing.grade}`;
 
   const palette = BURST_PALETTE[accent];
+  const typeGlow = elementalType ? TYPE_GLOW_HEX[elementalType] : null;
+  const glowStyle: CSSProperties | undefined = typeGlow
+    ? ({ ["--type-glow"]: typeGlow } as CSSProperties)
+    : undefined;
 
   return (
     <Link
@@ -142,30 +149,54 @@ export function ListingCard({
       onFocus={() => setHovered(true)}
       onBlur={() => setHovered(false)}
     >
-      {/* Transparent burst well — the section backdrop shows through.
-          One large halo burst sits centred behind the card, one small
-          accent burst tucks into a corner. Both fully contained in
-          the well — no clipping, no rays cut off at the tile edge. */}
-      <div className="relative flex justify-end flex-col items-center pt-6 pb-4 min-h-[310px]">
-        <Burst
-          points={BURST_A}
-          fill={palette.primary}
-          shadow={8}
-          strokeWidth={5}
-          className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] h-[92%] rotate-[-10deg] transition-transform duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[-16deg] group-hover:scale-[1.06]"
-        />
-        <Burst
-          points={BURST_C}
-          fill={palette.secondary}
-          shadow={5}
-          strokeWidth={5}
-          className="top-[3%] right-[3%] w-[38%] h-[38%] rotate-[22deg] transition-transform duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[40deg] group-hover:scale-[1.18] group-hover:translate-x-[6px] group-hover:-translate-y-[6px]"
-        />
+      {/*
+       * Overflow is deliberately visible at this level + below so the
+       * particle field can spill out of the tile and fade cleanly as
+       * it leaves — see the particle container's negative insets.
+       */}
+      <div
+        className="relative flex justify-end flex-col items-center pt-6 pb-4 min-h-[310px] overflow-visible"
+        style={glowStyle}
+      >
+        {/*
+         * Burst layer — the two starburst SVGs plus a type-coloured
+         * drop-shadow that blooms on hover. The `--type-glow` CSS var
+         * is set on the well div above; the filter reads it so each
+         * card's bursts glow in the right palette colour without any
+         * per-card JS switchery.
+         */}
+        <div
+          className={`absolute inset-0 transition-[filter] duration-300 pointer-events-none ${
+            typeGlow
+              ? "group-hover:[filter:drop-shadow(0_0_28px_var(--type-glow))_drop-shadow(0_0_12px_var(--type-glow))]"
+              : ""
+          }`}
+        >
+          <Burst
+            points={BURST_A}
+            fill={palette.primary}
+            shadow={8}
+            strokeWidth={5}
+            className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] h-[92%] rotate-[-10deg] transition-transform duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[-16deg] group-hover:scale-[1.06]"
+          />
+          <Burst
+            points={BURST_C}
+            fill={palette.secondary}
+            shadow={5}
+            strokeWidth={5}
+            className="top-[3%] right-[3%] w-[38%] h-[38%] rotate-[22deg] transition-transform duration-[450ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[40deg] group-hover:scale-[1.18] group-hover:translate-x-[6px] group-hover:-translate-y-[6px]"
+          />
+        </div>
 
-        {/* Elemental particle burst — between the bursts and the card so
-            flames/water/leaves read behind the artwork without obscuring
-            the card itself. */}
-        <div className="absolute inset-0 z-[1]">
+        {/*
+         * Particle field — sized deliberately LARGER than the burst
+         * well so particles emitting from the card perimeter have
+         * room to travel beyond the tile before alpha hits zero, and
+         * nothing clips them at the tile edge. Bottom bleed is kept
+         * smaller so the card meta block below isn't shadowed by
+         * rogue particles.
+         */}
+        <div className="absolute -top-12 -left-12 -right-12 -bottom-4 z-[1] overflow-visible pointer-events-none">
           <ParticleField type={elementalType} active={hovered} />
         </div>
 
@@ -185,7 +216,15 @@ export function ListingCard({
           ) : null}
         </div>
       </div>
-      <div className="pop-block bg-paper-strong rounded-md px-4 pt-3 pb-3 flex flex-col gap-1">
+      {/*
+       * Meta block sits ABOVE the particle field (z-3 > particle z-1)
+       * so particles drifting out the bottom of the well pass behind
+       * the card name / price rather than across the text. `relative`
+       * is required for z-index to apply. `overflow-visible` is
+       * explicit so the pop-block's 4px ink drop-shadow isn't clipped
+       * by any cascading rule.
+       */}
+      <div className="pop-block bg-paper-strong rounded-md px-4 pt-3 pb-3 flex flex-col gap-1 relative z-[3] overflow-visible">
         <div className="font-display text-[13px] md:text-[14px] leading-tight tracking-tight uppercase line-clamp-2 min-h-[28px]">
           {listing.card_name}
         </div>
