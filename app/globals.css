@@ -491,6 +491,167 @@ input[type="number"] {
   100% { opacity: 0; }
 }
 
+/* ----------------------------------------------------------------
+ * Pack-open fullscreen overlay (drives the centred flow from
+ * components/cardbuy/PackTile.tsx).
+ *
+ * Layered elements:
+ *   .pack-overlay-backdrop  — fades black 0 → 0.92 over 240ms
+ *   .pack-overlay-stage     — holds the pack, dollies it in + out
+ *   .pack-light-shaft       — white glow bursting from inside the
+ *                             pack once the lid tears away
+ *   .pack-overlay-flash     — full-viewport white flash at the end
+ *                             that masks the route change
+ * ----------------------------------------------------------------*/
+
+.pack-overlay-backdrop {
+  opacity: 0;
+  animation: pack-overlay-backdrop-in 260ms ease-out forwards;
+}
+@keyframes pack-overlay-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 0.92; }
+}
+
+/* Dolly the pack in from a smaller scale, then push further toward
+ * the camera during the tear so it reads as "coming at you". Size
+ * is roughly a third of shortest-viewport so it reads big without
+ * pushing past the screen on narrow phones. */
+.pack-overlay-stage {
+  width: min(340px, 70vw, 60vh);
+  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.6));
+  transform: scale(0.45);
+  opacity: 0;
+  animation: pack-overlay-dolly 1400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes pack-overlay-dolly {
+  0%   { transform: scale(0.45) translateZ(0); opacity: 0; }
+  15%  { transform: scale(1.02) translateZ(0); opacity: 1; }
+  25%  { transform: scale(1.00); }
+  55%  { transform: scale(1.06); }
+  80%  { transform: scale(1.14); }
+  100% { transform: scale(1.32); opacity: 1; }
+}
+
+/* Light shaft blooming from the torn top of the pack. Sits inside
+ * the pack-face and grows outward. */
+.pack-light-shaft {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  width: 4%;
+  height: 0;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(255, 255, 240, 0.95) 0%,
+    rgba(255, 255, 220, 0.55) 35%,
+    rgba(255, 255, 200, 0) 72%
+  );
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+  mix-blend-mode: screen;
+  animation: pack-light-shaft 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 520ms forwards;
+}
+@keyframes pack-light-shaft {
+  0%   { width: 4%;  height: 0;    opacity: 0; }
+  20%  { width: 22%; height: 120%; opacity: 1; }
+  70%  { width: 60%; height: 180%; opacity: 0.85; }
+  100% { width: 120%; height: 220%; opacity: 0; }
+}
+
+/* Full-viewport white flash that covers the route change. The
+ * setTimeout in PackTile.tsx fires router.push() ~80ms before this
+ * reaches full opacity, so the new page loads behind the white. */
+.pack-overlay-flash {
+  opacity: 0;
+  animation: pack-overlay-flash 520ms cubic-bezier(0.4, 0, 0.9, 1) 980ms forwards;
+}
+@keyframes pack-overlay-flash {
+  0%   { opacity: 0; }
+  55%  { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* ----------------------------------------------------------------
+ * Overlay-scale override for the existing pack-opening keyframes.
+ * Since the overlay always runs the animation at centre, the grid
+ * tile no longer enters .pack-opening at all — these selectors exist
+ * only when .pack-opening-large is also present, giving us a longer,
+ * more dramatic rhythm without touching the earlier keyframe set.
+ * ----------------------------------------------------------------*/
+.pack-opening-large.pack-tile .card-3d-inner {
+  animation: pack-face-rise 820ms cubic-bezier(0.2, 0.8, 0.2, 1) 420ms 1 forwards;
+}
+.pack-opening-large .pack-face {
+  animation: pack-jiggle 260ms ease-in-out 260ms 1;
+}
+.pack-opening-large .pack-lid {
+  animation: pack-lid-tear 780ms cubic-bezier(0.45, 0, 0.75, 0.2) 440ms 1 forwards;
+}
+.pack-opening-large .pack-lid-edge {
+  animation: pack-lid-edge-show 320ms ease-out 440ms 1 forwards;
+}
+.pack-opening-large .pack-bottom-plate {
+  animation: pack-bottom-drop 640ms cubic-bezier(0.4, 0, 0.8, 0.4) 520ms 1 forwards;
+}
+.pack-opening-large .pack-sticker {
+  animation: pack-sticker-spin 720ms cubic-bezier(0.3, 0, 0.7, 0.3) 440ms 1 forwards;
+}
+.pack-opening-large .pack-burst-card-0 {
+  animation: pack-burst-0 780ms cubic-bezier(0.2, 0.8, 0.2, 1) 560ms 1 forwards;
+}
+.pack-opening-large .pack-burst-card-1 {
+  animation: pack-burst-1 800ms cubic-bezier(0.2, 0.8, 0.2, 1) 600ms 1 forwards;
+}
+.pack-opening-large .pack-burst-card-2 {
+  animation: pack-burst-2 820ms cubic-bezier(0.2, 0.8, 0.2, 1) 580ms 1 forwards;
+}
+.pack-opening-large .pack-burst-card-3 {
+  animation: pack-burst-3 780ms cubic-bezier(0.2, 0.8, 0.2, 1) 620ms 1 forwards;
+}
+.pack-opening-large .pack-burst-card-4 {
+  animation: pack-burst-4 760ms cubic-bezier(0.2, 0.8, 0.2, 1) 640ms 1 forwards;
+}
+/* Extra cards 5–7 for the bigger pack — needs more density at scale. */
+.pack-opening-large .pack-burst-card-5 {
+  animation: pack-burst-5 780ms cubic-bezier(0.2, 0.8, 0.2, 1) 600ms 1 forwards;
+}
+.pack-opening-large .pack-burst-card-6 {
+  animation: pack-burst-6 820ms cubic-bezier(0.2, 0.8, 0.2, 1) 580ms 1 forwards;
+}
+.pack-opening-large .pack-burst-card-7 {
+  animation: pack-burst-7 760ms cubic-bezier(0.2, 0.8, 0.2, 1) 660ms 1 forwards;
+}
+
+@keyframes pack-burst-5 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { transform: translate(-60%, 30%) rotate(-20deg) scale(1.10); opacity: 1; }
+  100% { transform: translate(-110%, 90%) rotate(-30deg) scale(1.35); opacity: 0; }
+}
+@keyframes pack-burst-6 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { transform: translate(60%, 30%) rotate(20deg) scale(1.10); opacity: 1; }
+  100% { transform: translate(110%, 90%) rotate(30deg) scale(1.35); opacity: 0; }
+}
+@keyframes pack-burst-7 {
+  0%   { transform: translate(0, 20%) rotate(0deg) scale(0.25); opacity: 0; }
+  30%  { opacity: 1; }
+  60%  { transform: translate(5%, 60%) rotate(4deg) scale(1.2); opacity: 1; }
+  100% { transform: translate(10%, 140%) rotate(8deg) scale(1.4); opacity: 0; }
+}
+
+/* The per-pack-face flash sits inside the pack-face; on the overlay
+ * we rely on the full-viewport .pack-overlay-flash instead, so
+ * suppress the inner flash here to avoid double-bloom. */
+.pack-opening-large .pack-flash {
+  animation: none;
+  opacity: 0;
+}
+
 /* Reduced motion: no animations at all. The onClick handler in PackTile
  * already navigates immediately when this query matches. */
 @media (prefers-reduced-motion: reduce) {
@@ -502,7 +663,11 @@ input[type="number"] {
   .pack-opening .pack-bottom-plate,
   .pack-opening .pack-sticker,
   .pack-opening .pack-burst-card,
-  .pack-opening .pack-flash {
+  .pack-opening .pack-flash,
+  .pack-overlay-backdrop,
+  .pack-overlay-stage,
+  .pack-light-shaft,
+  .pack-overlay-flash {
     animation: none !important;
   }
 }
