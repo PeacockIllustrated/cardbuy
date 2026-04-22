@@ -204,9 +204,9 @@ export function OfferBuilder({
 
       {/* Offer headline */}
       <div className="border-t-[3px] border-ink pt-5 flex flex-col gap-3">
-        <div className="bg-yellow border-[3px] border-ink rounded-md p-4 flex flex-col gap-1">
+        <div className="relative bg-yellow border-[3px] border-ink rounded-md p-4 flex flex-col gap-1 overflow-hidden">
           <span className="font-display text-[10px] tracking-wider text-ink/70">
-            Our offer
+            {offer.belowMin ? "Value" : "Our offer"}
           </span>
           <div className="font-display text-[44px] leading-none tabular-nums">
             {formatGBP(offer.offerGbp * qty)}
@@ -216,12 +216,29 @@ export function OfferBuilder({
             {offer.multiplierLabel} · {offer.marginLabel} ={" "}
             {formatGBP(offer.offerGbp)} per card
           </div>
+
+          {offer.belowMin ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-[-8deg]"
+            >
+              <div className="relative border-[4px] border-warn text-warn px-3 py-2 rounded-sm bg-yellow/80 shadow-[3px_3px_0_0_rgba(0,0,0,0.15)]">
+                <div className="absolute inset-[3px] border-2 border-warn/70 rounded-sm pointer-events-none" />
+                <div className="font-display uppercase text-[12px] tracking-[0.08em] leading-tight text-center">
+                  Sorry<br />
+                  under buy<br />
+                  threshold
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {offer.belowMin ? (
-          <div className="bg-warn/10 border-2 border-warn text-warn rounded-md px-3 py-2 text-[12px]">
-            Below minimum buy price ({formatGBP(0.5)}). We can&apos;t buy this
-            card right now.
+          <div className="text-[11px] text-muted leading-snug">
+            Below our minimum buy price of {formatGBP(config.min_buy_price)} —
+            we can&apos;t buy this card right now, but the market value is
+            shown for reference.
           </div>
         ) : null}
 

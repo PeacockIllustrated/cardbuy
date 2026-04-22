@@ -73,7 +73,11 @@ export function computeMockOffer(
   const offerGbpRaw = baselineGbp * multiplier * margin;
   const belowMin = offerGbpRaw < config.min_buy_price;
   const lowConfidence = saleCount < config.confidence_threshold;
-  const offerGbp = belowMin ? 0 : +offerGbpRaw.toFixed(2);
+  // Always expose the true computed value (rounded to the penny). The
+  // UI uses `belowMin` to decide whether to label it "Our offer" vs
+  // "Value", and disables submission independently — we shouldn't hide
+  // the actual number behind £0.00.
+  const offerGbp = +offerGbpRaw.toFixed(2);
 
   return {
     baselineUsd: +baselineUsd.toFixed(2),
