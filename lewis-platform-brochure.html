@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lewis's Pokémon Platform · Scope &amp; Design</title>
+<title>Lewis's Pokémon Platform · Build Status</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://images.pokemontcg.io">
@@ -984,17 +984,17 @@
 <section class="page cover">
   <div class="cover-left">
     <div>
-      <div class="sub">Scope &amp; Design · April 2026</div>
+      <div class="sub">Build status · April 2026</div>
       <h1>
         Lewis's<br/>
         Pokémon<br/>
         Platform<span class="amp">.</span>
       </h1>
-      <div class="sell">A bespoke proposal by Tom.Peacock.Design</div>
+      <div class="sell">Live platform · built by Tom.Peacock.Design</div>
     </div>
     <div class="meta">
       <div><div class="l">Prepared for</div><div class="v">Lewis</div></div>
-      <div><div class="l">Status</div><div class="v">Draft · for sign-off</div></div>
+      <div><div class="l">Status</div><div class="v">Live · Phases 1–7 shipped</div></div>
       <div><div class="l">By</div><div class="v">Tom.Peacock.Design</div></div>
     </div>
   </div>
@@ -1036,30 +1036,31 @@
 
   <div class="grid" style="grid-template-columns: 1.2fr 1fr; gap: 24pt; margin-top: 4pt;">
     <div>
-      <span class="chip">What we're building</span>
+      <span class="chip">What we've built</span>
       <h2 class="display" style="margin-top: 8pt; font-size: 44pt;">One shop.<br/>Two directions.</h2>
       <p class="lede muted" style="margin-top: 8pt;">
-        A bespoke platform that lets customers sell cards to you and buy
-        cards from you — running from a single admin panel that you control.
+        A bespoke platform where customers sell cards to you and buy
+        cards from you — running from a single admin panel you control.
+        Live today, seeded with real market prices nightly.
       </p>
 
       <div class="divider"></div>
 
       <div class="grid grid-3">
         <div class="feature" style="background: var(--yellow);">
-          <span class="tiny">01</span>
+          <span class="tiny">01 · Live</span>
           <h3 class="display" style="margin-top: 3pt;">Buylist</h3>
-          <p style="font-size: 8.5pt;">Instant offers. Posted in. Paid out. No email threads.</p>
+          <p style="font-size: 8.5pt;">Instant GBP offers on real TCGplayer market data. Posted in. No email threads.</p>
         </div>
         <div class="feature" style="background: var(--teal);">
-          <span class="tiny">02</span>
+          <span class="tiny">02 · Live</span>
           <h3 class="display" style="margin-top: 3pt;">Shopfront</h3>
-          <p style="font-size: 8.5pt;">Your curated stock, per unit, with a real checkout.</p>
+          <p style="font-size: 8.5pt;">Your curated stock, per unit, with cart + checkout. Stripe wiring still to come.</p>
         </div>
         <div class="feature" style="background: var(--pink);">
-          <span class="tiny">03</span>
+          <span class="tiny">03 · Live</span>
           <h3 class="display" style="margin-top: 3pt;">Admin</h3>
-          <p style="font-size: 8.5pt;">Every margin, price, and feature slot — a dial you turn.</p>
+          <p style="font-size: 8.5pt;">Every margin, price, and feature slot — a dial you turn, already wired.</p>
         </div>
       </div>
 
@@ -1068,15 +1069,17 @@
       <span class="chip">Inside this document</span>
       <div class="grid grid-2" style="margin-top: 8pt; font-size: 9pt; gap: 4pt 16pt;">
         <div>01 · The platform preview</div>
-        <div>06 · Pricing formula &amp; dials</div>
+        <div>07 · Pricing formula &amp; dials</div>
         <div>02 · Two flows, one spine</div>
-        <div>07 · Your admin dashboard</div>
+        <div>08 · Your admin dashboard</div>
         <div>03 · Seller journey</div>
-        <div>08 · Why APIs beat off-the-shelf</div>
+        <div>09 · Why APIs beat off-the-shelf</div>
         <div>04 · Buyer journey</div>
-        <div>09 · Build phases</div>
-        <div>05 · Data engine — three APIs</div>
-        <div>10 · Approval</div>
+        <div>10 · What's shipped · what's next</div>
+        <div>05 · Binder &amp; collection</div>
+        <div>11 · Back cover</div>
+        <div>06 · Data engine — three APIs</div>
+        <div></div>
       </div>
     </div>
 
@@ -1226,7 +1229,7 @@
       <h2 class="display" style="margin-top: 6pt;">Two flows. One catalogue.</h2>
     </div>
     <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
-      Buy-in and sell-out share one spine — <strong>cb_cards</strong>. Every
+      Buy-in and sell-out share one spine — <strong>lewis_cards</strong>. Every
       Charizard on the site is <em>the same</em> Charizard. No re-entry, no
       duplicate listings, no price drift.
     </p>
@@ -1271,14 +1274,14 @@
       <div class="arch-arrow-h"></div>
       <div class="cluster">
         <div class="arch-node ink">
-          <div class="title">cb_cards · the spine</div>
+          <div class="title">lewis_cards · the spine</div>
           <div class="sub">20,000+ canonical Pokémon cards · one source, one ID, both flows</div>
         </div>
       </div>
       <div class="arch-arrow-h"></div>
       <div class="cluster">
-        <div class="arch-node pink"><div class="title">cb_submissions</div><div class="sub">Quoted · shipped · verified · paid</div></div>
-        <div class="arch-node pink"><div class="title">cb_listings</div><div class="sub">Stock units · per-SKU prices</div></div>
+        <div class="arch-node pink"><div class="title">lewis_submissions</div><div class="sub">Quoted · shipped · verified · paid</div></div>
+        <div class="arch-node pink"><div class="title">lewis_listings</div><div class="sub">Stock units · per-SKU prices</div></div>
       </div>
     </div>
   </div>
@@ -1311,28 +1314,28 @@
   <div class="grid grid-5">
     <div class="feature" style="background: var(--yellow);">
       <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">01</div>
-      <h4 class="display">Search</h4>
+      <h4 class="display">Search <span style="font-size: 6pt; letter-spacing: 0.08em; background: var(--ink); color: var(--paper); padding: 1pt 3pt; margin-left: 2pt;">LIVE</span></h4>
       <p style="font-size: 8pt;">Type a card name. Autocomplete lists every variant in every set.</p>
     </div>
     <div class="feature">
       <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">02</div>
-      <h4 class="display">Add</h4>
+      <h4 class="display">Add <span style="font-size: 6pt; letter-spacing: 0.08em; background: var(--ink); color: var(--paper); padding: 1pt 3pt; margin-left: 2pt;">LIVE</span></h4>
       <p style="font-size: 8pt;">Pick condition. Card joins a running submission with live total.</p>
     </div>
     <div class="feature" style="background: var(--pink);">
       <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">03</div>
-      <h4 class="display">Offer</h4>
-      <p style="font-size: 8pt;">Total offer appears — cash or +10% trade credit. Frozen for 7 days on accept.</p>
+      <h4 class="display">Offer <span style="font-size: 6pt; letter-spacing: 0.08em; background: var(--ink); color: var(--paper); padding: 1pt 3pt; margin-left: 2pt;">LIVE</span></h4>
+      <p style="font-size: 8pt;">Total offer appears — cash or +10% trade credit. Pulled from TCGplayer nightly.</p>
     </div>
     <div class="feature">
       <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">04</div>
-      <h4 class="display">Ship</h4>
-      <p style="font-size: 8pt;">Royal Mail label emailed as PDF. Tracking auto-updates status.</p>
+      <h4 class="display">Ship <span style="font-size: 6pt; letter-spacing: 0.08em; background: var(--yellow); color: var(--ink); padding: 1pt 3pt; margin-left: 2pt; border: 1px solid var(--ink);">NEXT</span></h4>
+      <p style="font-size: 8pt;">Royal Mail label PDF + tracking webhook — wired next phase.</p>
     </div>
     <div class="feature" style="background: var(--teal);">
       <div style="font-family: var(--font-display); font-size: 22pt; line-height: 1; margin-bottom: 3pt;">05</div>
-      <h4 class="display">Paid</h4>
-      <p style="font-size: 8pt;">You verify. One click. PayPal Payouts does the rest.</p>
+      <h4 class="display">Paid <span style="font-size: 6pt; letter-spacing: 0.08em; background: var(--yellow); color: var(--ink); padding: 1pt 3pt; margin-left: 2pt; border: 1px solid var(--ink);">NEXT</span></h4>
+      <p style="font-size: 8pt;">PayPal Payouts integration — wired next phase.</p>
     </div>
   </div>
 
@@ -1378,8 +1381,8 @@
       <h2 class="display" style="margin-top: 6pt;">The shopfront.</h2>
     </div>
     <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
-      Featured at the top · filters that stick · real photography · Stripe
-      checkout with Apple Pay and Google Pay built-in.
+      Featured at the top · filters that stick · real photography · cart
+      and checkout live today; Stripe payment wiring queued next.
     </p>
   </div>
 
@@ -1480,12 +1483,149 @@
 </section>
 
 <!-- ======================================================================
-     PAGE 7 · DATA ENGINE
+     PAGE 7 · BINDER & COLLECTION
 ====================================================================== -->
 <section class="page">
   <div class="page-header">
     <span class="wordmark">Lewis's Pokémon Platform</span>
-    <span class="section-label">06 · Data engine</span>
+    <span class="section-label">06 · Your collection</span>
+  </div>
+
+  <div class="flex-between">
+    <div>
+      <span class="chip">The sticky feature</span>
+      <h2 class="display" style="margin-top: 6pt;">A binder that remembers.</h2>
+    </div>
+    <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
+      Every customer gets a national-Pokédex binder. Shop orders drop in
+      automatically. Missing slots turn into a wishlist you can fulfil.
+      It's the reason they come back.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="grid" style="grid-template-columns: 1.5fr 1fr; gap: 16pt; align-items: start;">
+    <div>
+      <div class="mock" style="padding: 8pt;">
+        <div class="mock-bar">
+          <span>lewis's pokémon · /binder</span>
+          <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        </div>
+        <div style="padding: 10pt 12pt 12pt;">
+          <div style="display: flex; gap: 4pt; flex-wrap: wrap; margin-bottom: 8pt;">
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--ink); color: var(--paper); padding: 3pt 6pt;">All</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--yellow); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Kanto</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Johto</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Hoenn</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Sinnoh</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Unova</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Kalos</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Alola</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Galar</span>
+            <span style="font-family: var(--font-display); font-size: 7pt; letter-spacing: 0.08em; background: var(--paper-strong); border: 1.5px solid var(--ink); padding: 3pt 6pt;">Paldea</span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6pt; border-bottom: 1.5px solid var(--ink); padding-bottom: 4pt;">
+            <div>
+              <div class="tiny" style="font-size: 6.5pt;">Kanto · Gen 1</div>
+              <div class="display" style="font-size: 14pt; margin-top: 2pt;">#001 – #009</div>
+            </div>
+            <div style="font-family: var(--font-display); font-size: 9pt;">
+              <span style="color: var(--secondary);">7 / 151</span>
+              <span style="margin-left: 8pt; background: var(--pink); border: 1.5px solid var(--ink); padding: 1.5pt 5pt; font-size: 7pt;">Grail · Charizard</span>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5pt;">
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper-strong);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display);"><span>#001</span><span style="background: var(--teal); padding: 0.5pt 3pt;">OWN ×2</span></div>
+              <img src="https://images.pokemontcg.io/base1/44.png" style="width: 100%; border-radius: 2pt; margin-top: 3pt;" alt="Bulbasaur" />
+            </div>
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display); color: var(--secondary);"><span>#002</span><span style="background: var(--paper); border: 1px dashed var(--secondary); padding: 0.5pt 3pt;">♡ WISH</span></div>
+              <div style="margin-top: 3pt; aspect-ratio: 63/88; background: repeating-linear-gradient(45deg, #f0ead6 0, #f0ead6 4px, #e8dfc7 4px, #e8dfc7 8px); border: 1px dashed var(--secondary); display: flex; align-items: center; justify-content: center; border-radius: 2pt;">
+                <span class="tiny" style="font-size: 6pt;">Ivysaur</span>
+              </div>
+            </div>
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper-strong);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display);"><span>#003</span><span style="background: var(--teal); padding: 0.5pt 3pt;">OWN</span></div>
+              <img src="https://images.pokemontcg.io/base1/15.png" style="width: 100%; border-radius: 2pt; margin-top: 3pt;" alt="Venusaur" />
+            </div>
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper-strong);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display);"><span>#004</span><span style="background: var(--teal); padding: 0.5pt 3pt;">OWN</span></div>
+              <img src="https://images.pokemontcg.io/base1/46.png" style="width: 100%; border-radius: 2pt; margin-top: 3pt;" alt="Charmander" />
+            </div>
+            <div style="border: 3px solid var(--pink); border-radius: 3pt; padding: 4pt; background: var(--paper-strong); position: relative;">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display);"><span>#005</span><span style="background: var(--pink); padding: 0.5pt 3pt;">GRAIL ♥</span></div>
+              <img src="https://images.pokemontcg.io/base1/4.png" style="width: 100%; border-radius: 2pt; margin-top: 3pt;" alt="Charizard" />
+              <span style="position: absolute; bottom: 4pt; right: 4pt; background: var(--pink); color: var(--ink); font-family: var(--font-display); font-size: 6pt; letter-spacing: 0.08em; padding: 1.5pt 4pt; border: 1.5px solid var(--ink);">PSA 9</span>
+            </div>
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display); color: var(--secondary);"><span>#006</span><span style="background: var(--paper); border: 1px dashed var(--secondary); padding: 0.5pt 3pt;">♡ WISH</span></div>
+              <div style="margin-top: 3pt; aspect-ratio: 63/88; background: repeating-linear-gradient(45deg, #f0ead6 0, #f0ead6 4px, #e8dfc7 4px, #e8dfc7 8px); border: 1px dashed var(--secondary); display: flex; align-items: center; justify-content: center; border-radius: 2pt;">
+                <span class="tiny" style="font-size: 6pt;">Charizard</span>
+              </div>
+            </div>
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper-strong);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display);"><span>#007</span><span style="background: var(--teal); padding: 0.5pt 3pt;">OWN</span></div>
+              <img src="https://images.pokemontcg.io/base1/42.png" style="width: 100%; border-radius: 2pt; margin-top: 3pt;" alt="Squirtle" />
+            </div>
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper-strong);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display);"><span>#008</span><span style="background: var(--teal); padding: 0.5pt 3pt;">OWN</span></div>
+              <img src="https://images.pokemontcg.io/base1/63.png" style="width: 100%; border-radius: 2pt; margin-top: 3pt;" alt="Wartortle" />
+            </div>
+            <div style="border: 2px solid var(--ink); border-radius: 3pt; padding: 4pt; background: var(--paper-strong);">
+              <div style="display: flex; justify-content: space-between; font-size: 6.5pt; letter-spacing: 0.08em; font-family: var(--font-display);"><span>#009</span><span style="background: var(--teal); padding: 0.5pt 3pt;">OWN</span></div>
+              <img src="https://images.pokemontcg.io/base1/2.png" style="width: 100%; border-radius: 2pt; margin-top: 3pt;" alt="Blastoise" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack" style="gap: 8pt;">
+      <div class="feature" style="background: var(--yellow);">
+        <span class="tiny">01</span>
+        <h4 class="display" style="margin-top: 3pt;">National dex · 1,025 slots</h4>
+        <p style="font-size: 8pt;">Every Pokémon from Bulbasaur to Pecharunt, filterable by region. Pack-opened buys drop in automatically.</p>
+      </div>
+      <div class="feature" style="background: var(--teal);">
+        <span class="tiny">02</span>
+        <h4 class="display" style="margin-top: 3pt;">Graded scan · PSA camera</h4>
+        <p style="font-size: 8pt;">Passport-style framed camera locks slabs into a fixed crop. Scan, store, show off — no typing.</p>
+      </div>
+      <div class="feature" style="background: var(--pink);">
+        <span class="tiny">03</span>
+        <h4 class="display" style="margin-top: 3pt;">One Grail per binder</h4>
+        <p style="font-size: 8pt;">The card that makes the collection. Pinned at the top. Worn like a badge across the whole page.</p>
+      </div>
+      <div class="feature">
+        <span class="tiny">04</span>
+        <h4 class="display" style="margin-top: 3pt;">Wishlist · demand bridge</h4>
+        <p style="font-size: 8pt;">Missing slot? Tap the heart. Your list feeds the <code>admin/demand</code> board so Lewis can source outreach to the buylist.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top: 10pt; font-size: 9pt; max-width: 120ch;">
+    <strong>Why this matters:</strong> a binder turns a one-off shopper into a
+    returning collector. It gives you a real-time demand signal (what people
+    want, by card ID) and a retention hook (people come back to see their own
+    pile grow). Shop orders mark-as-delivered → slot auto-fills → the next
+    email subject writes itself.
+  </p>
+
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>07</span></div>
+</section>
+
+<!-- ======================================================================
+     PAGE 8 · DATA ENGINE (was 7)
+====================================================================== -->
+<section class="page">
+  <div class="page-header">
+    <span class="wordmark">Lewis's Pokémon Platform</span>
+    <span class="section-label">07 · Data engine</span>
   </div>
 
   <div class="flex-between">
@@ -1509,9 +1649,9 @@
       <p style="font-size: 8.5pt;"><strong>The deliberate saving.</strong> A quarterly snapshot of the public card catalogue lives in your own Supabase. One-time ingest. <strong>Zero ongoing API cost.</strong></p>
     </div>
     <div class="feature" style="background: var(--teal);">
-      <span class="chip">Free · 02</span>
+      <span class="chip">Live · 02</span>
       <h3 class="display" style="margin-top: 5pt;">TCGCSV</h3>
-      <p style="font-size: 8.5pt;"><strong>A free daily mirror of TCGplayer's live market data.</strong> Low · mid · high · market · direct-low — all conditions, all printings. Pulled nightly. <strong>£0 per month.</strong></p>
+      <p style="font-size: 8.5pt;"><strong>A free daily mirror of TCGplayer's live market data.</strong> 170 sets mapped, 28k+ price rows, nightly 04:00 UTC cron. <strong>£0 per month.</strong></p>
     </div>
     <div class="feature" style="background: var(--pink);">
       <span class="chip">Free · 03</span>
@@ -1537,8 +1677,8 @@
     </div>
     <div class="arch-arrow-h"></div>
     <div class="cluster">
-      <div class="arch-node"><div class="title">cb_cards</div><div class="sub">Canonical catalogue · stable</div></div>
-      <div class="arch-node"><div class="title">cb_prices</div><div class="sub">Nightly-refreshed raw &amp; graded · previous kept for audit</div></div>
+      <div class="arch-node"><div class="title">lewis_cards</div><div class="sub">Canonical catalogue · stable</div></div>
+      <div class="arch-node"><div class="title">lewis_card_prices</div><div class="sub">Nightly TCGplayer mirror · history table kept for audit</div></div>
     </div>
   </div>
 
@@ -1551,16 +1691,16 @@
     — every offer on the site updates by 9:01.
   </p>
 
-  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>07</span></div>
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>08</span></div>
 </section>
 
 <!-- ======================================================================
-     PAGE 8 · PRICING ENGINE
+     PAGE 9 · PRICING ENGINE (was 8)
 ====================================================================== -->
 <section class="page">
   <div class="page-header">
     <span class="wordmark">Lewis's Pokémon Platform</span>
-    <span class="section-label">07 · Pricing engine</span>
+    <span class="section-label">08 · Pricing engine</span>
   </div>
 
   <div class="flex-between">
@@ -1651,16 +1791,16 @@
     </div>
   </div>
 
-  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>08</span></div>
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>09</span></div>
 </section>
 
 <!-- ======================================================================
-     PAGE 9 · YOUR ADMIN
+     PAGE 10 · YOUR ADMIN (was 9)
 ====================================================================== -->
 <section class="page">
   <div class="page-header">
     <span class="wordmark">Lewis's Pokémon Platform</span>
-    <span class="section-label">08 · Your admin</span>
+    <span class="section-label">09 · Your admin</span>
   </div>
 
   <div class="flex-between" style="margin-bottom: 8pt;">
@@ -1686,7 +1826,10 @@
         <span>Pricing</span>
         <span>Inventory</span>
         <span>Orders</span>
-        <span>Catalogue</span>
+        <span>Cards</span>
+        <span>Demand</span>
+        <span>Sourcing</span>
+        <span>Sync</span>
         <span>Users</span>
       </div>
 
@@ -1731,23 +1874,23 @@
     <div class="feature" style="background: var(--yellow);">
       <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <h4 class="display">Price sync</h4>
-        <span style="font-family: var(--font-display); font-size: 6pt; letter-spacing: 0.08em; background: var(--teal); border: 1.5px solid var(--ink); padding: 1.5pt 4pt; line-height: 1;">SCHEDULED</span>
+        <span style="font-family: var(--font-display); font-size: 6pt; letter-spacing: 0.08em; background: var(--teal); border: 1.5px solid var(--ink); padding: 1.5pt 4pt; line-height: 1;">LIVE</span>
       </div>
-      <p style="font-size: 8pt; margin-bottom: 4pt;">TCGCSV · nightly 03:00 GMT · last run <strong>20 Apr · 21,481 rows</strong>.</p>
+      <p style="font-size: 8pt; margin-bottom: 4pt;">TCGCSV · nightly 04:00 UTC · last run <strong>22 Apr · 28,431 rows · 0 errors</strong>.</p>
       <span style="display: inline-block; background: var(--ink); color: var(--paper); font-family: var(--font-display); text-transform: uppercase; font-size: 7pt; letter-spacing: 0.08em; padding: 3pt 6pt; line-height: 1; box-shadow: 2px 2px 0 0 var(--ink);">Run sync now →</span>
     </div>
   </div>
 
-  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>09</span></div>
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>10</span></div>
 </section>
 
 <!-- ======================================================================
-     PAGE 10 · APIS VS OFF-THE-SHELF
+     PAGE 11 · APIS VS OFF-THE-SHELF (was 10)
 ====================================================================== -->
 <section class="page">
   <div class="page-header">
     <span class="wordmark">Lewis's Pokémon Platform</span>
-    <span class="section-label">09 · Why APIs win</span>
+    <span class="section-label">10 · Why APIs win</span>
   </div>
 
   <div class="flex-between">
@@ -1818,26 +1961,27 @@
     half — harder to measure, but bigger.
   </p>
 
-  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>10</span></div>
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>11</span></div>
 </section>
 
 <!-- ======================================================================
-     PAGE 11 · ROADMAP + APPROVAL
+     PAGE 12 · SHIPPED &amp; NEXT (was 11)
 ====================================================================== -->
 <section class="page">
   <div class="page-header">
     <span class="wordmark">Lewis's Pokémon Platform</span>
-    <span class="section-label">10 · Roadmap &amp; approval</span>
+    <span class="section-label">11 · Shipped &amp; next</span>
   </div>
 
   <div class="flex-between">
     <div>
-      <span class="chip">How it gets built</span>
-      <h2 class="display" style="margin-top: 6pt;">Five phases. Reviewed at each.</h2>
+      <span class="chip">Where the build stands</span>
+      <h2 class="display" style="margin-top: 6pt;">Seven phases down. Two to go.</h2>
     </div>
     <p class="muted" style="font-size: 9pt; max-width: 56ch; margin: 0;">
-      You never commit to phase N+1 until phase N is demoed and signed off.
-      Surprises stay small and scope stays honest.
+      The platform is live. Customers can browse, sell into the buylist,
+      and collect their purchases in a national-dex binder. Payments
+      rails and the lifecycle automation are the remaining pieces.
     </p>
   </div>
 
@@ -1845,76 +1989,80 @@
 
   <div class="timeline-h">
     <div class="step t">
-      <span class="phase">Phase 1</span>
+      <span class="phase">Phase 1 · Shipped</span>
       <h4>Wireframe &amp; IA</h4>
-      <p>Every route and flow laid out in greyscale. Structure agreed before look.</p>
+      <p>Every route laid out. Every flow walked end-to-end before styling began.</p>
     </div>
     <div class="step p">
-      <span class="phase">Phase 2</span>
-      <h4>Brand system</h4>
-      <p>Pop-art palette applied across the wireframe — the version you're holding.</p>
+      <span class="phase">Phase 2 · Shipped</span>
+      <h4>Data layer + auth</h4>
+      <p>Supabase wired. Magic-link + password login. Admin role-gating.</p>
     </div>
     <div class="step y">
-      <span class="phase">Phase 3</span>
-      <h4>Data layer</h4>
-      <p>Supabase, auth, TCGCSV price ingest, nightly cron, manual admin refresh.</p>
-    </div>
-    <div class="step">
-      <span class="phase">Phase 4</span>
+      <span class="phase">Phase 3 · Shipped</span>
       <h4>Pricing engine</h4>
-      <p>Formula wired through admin dials. Confidence scoring. Offer freeze.</p>
+      <p>TCGCSV nightly sync. 170 sets live. Margin dials in admin.</p>
+    </div>
+    <div class="step p">
+      <span class="phase">Phase 5 · Shipped</span>
+      <h4>Brand system</h4>
+      <p>Pop-art palette applied to every route. Particle-lit featured tiles.</p>
     </div>
     <div class="step t">
-      <span class="phase">Phase 5</span>
-      <h4>Lifecycle</h4>
-      <p>Shipping labels, verification UI, Stripe, PayPal Payouts, email flow.</p>
+      <span class="phase">Phase 6 · Shipped</span>
+      <h4>Binder + graded scan</h4>
+      <p>National-dex collection view. PSA-slab camera scanner. Wishlist + demand bridge.</p>
+    </div>
+    <div class="step y">
+      <span class="phase">Phase 7 · Shipped</span>
+      <h4>Shop persistence</h4>
+      <p>Listings, atomic order RPC, admin state machine. Stock reserved on checkout.</p>
+    </div>
+    <div class="step">
+      <span class="phase">Phase 4 · Next</span>
+      <h4>Submission lifecycle</h4>
+      <p>Verify/revise UI, PayPal Payouts, credit ledger. Closes the buylist loop.</p>
+    </div>
+    <div class="step">
+      <span class="phase">Phase 8 · Next</span>
+      <h4>Production readiness</h4>
+      <p>Real Stripe, Royal Mail labels, transactional email, graded price source.</p>
     </div>
   </div>
 
   <div class="divider"></div>
 
-  <div class="grid" style="grid-template-columns: 1.4fr 1fr; gap: 14pt;">
+  <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 14pt;">
     <div class="pop" style="padding: 12pt; background: var(--paper-strong); border-radius: 4pt;">
-      <span class="chip">Approval</span>
-      <h3 class="display" style="margin-top: 5pt; font-size: 16pt;">Sign below to set the baseline.</h3>
-      <p style="font-size: 8.5pt;" class="muted">
-        Commercial terms live in the accompanying letter. Your signature here
-        confirms the scope, flows, data sources, and technical approach
-        described in this document as the build baseline.
-      </p>
-
-      <div class="grid" style="grid-template-columns: 2fr 1fr; gap: 14pt; margin-top: 12pt;">
-        <div>
-          <div style="height: 22pt; border-bottom: 1.5px solid var(--ink);"></div>
-          <div class="tiny" style="margin-top: 4pt;">Lewis · signature</div>
-        </div>
-        <div>
-          <div style="height: 22pt; border-bottom: 1.5px solid var(--ink);"></div>
-          <div class="tiny" style="margin-top: 4pt;">Date</div>
-        </div>
-      </div>
+      <span class="chip">Today</span>
+      <h3 class="display" style="margin-top: 5pt; font-size: 16pt;">What's live right now.</h3>
+      <ul style="font-size: 8.5pt; padding-left: 14pt; margin-top: 8pt;">
+        <li>Seller can search 20k+ cards, build a submission, accept an instant GBP offer</li>
+        <li>Buyer can browse, basket and check out (payment stub — Stripe next)</li>
+        <li>Binder tracks every owned card; shop orders auto-add on delivery</li>
+        <li>Admin owns margins, featured slots, sync dashboard, user roles</li>
+        <li>Prices refreshed nightly from TCGplayer — 28k+ rows · 0 errors</li>
+      </ul>
     </div>
 
     <div class="pop" style="padding: 12pt; background: var(--ink); color: var(--paper); border-radius: 4pt;">
       <span class="chip" style="background: var(--paper); color: var(--ink);">Next</span>
-      <h3 class="display" style="margin-top: 5pt; font-size: 16pt; color: var(--paper);">Kick-off in 7 days.</h3>
-      <p style="font-size: 8.5pt; color: #cdbda0;">
-        Once signed, we book a 60-minute call to walk through Phase 1 in detail
-        and lock a provisional delivery date for each milestone.
-      </p>
-      <ul style="color: var(--paper); padding-left: 14pt; margin-top: 8pt;">
-        <li>Credentials collected into a password manager you own</li>
-        <li>Supabase &amp; Vercel projects provisioned</li>
-        <li>First deploy on staging within 10 working days</li>
+      <h3 class="display" style="margin-top: 5pt; font-size: 16pt; color: var(--paper);">Short punch list.</h3>
+      <ul style="color: var(--paper); padding-left: 14pt; margin-top: 8pt; font-size: 8.5pt;">
+        <li>Stripe checkout — flips shop orders from stub → paid</li>
+        <li>PayPal Payouts — closes the buylist payment leg</li>
+        <li>Royal Mail labels + tracking webhook</li>
+        <li>Transactional email (order, payout, wishlist match)</li>
+        <li>Graded price source — swaps the mock baseline for real data</li>
       </ul>
     </div>
   </div>
 
-  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>11</span></div>
+  <div class="page-footer"><span>Lewis's Pokémon Platform</span><span>12</span></div>
 </section>
 
 <!-- ======================================================================
-     PAGE 12 · BACK COVER
+     PAGE 13 · BACK COVER (was 12)
 ====================================================================== -->
 <section class="page" style="padding: 0;">
   <div style="height: 210mm; background: var(--ink); color: var(--paper); position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr;">
@@ -1923,18 +2071,18 @@
       <div>
         <div class="tiny" style="color: var(--paper); font-size: 8pt;">Thank you for reading.</div>
         <h1 class="display" style="color: var(--paper); font-size: 64pt; line-height: 0.88; margin-top: 12pt; letter-spacing: -0.03em;">
-          Let's<br/>build it<span style="color: var(--pink);">.</span>
+          Now let's<br/>land it<span style="color: var(--pink);">.</span>
         </h1>
         <p style="color: #cdbda0; font-size: 10pt; line-height: 1.55; max-width: 90mm; margin-top: 14pt;">
-          Any question, doubt, or better idea — mark it up. This scope belongs
-          to you long before a line of code does.
+          Seven phases down, two to go. Any bug, feature request, or gap —
+          flag it. Your platform, always in-progress.
         </p>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10pt; padding-top: 12pt; border-top: 1.5px solid var(--paper);">
         <div>
           <div class="tiny" style="color: var(--paper); opacity: 0.7;">Document</div>
-          <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 10pt; margin-top: 3pt;">Scope &amp; Design</div>
+          <div style="font-family: var(--font-display); text-transform: uppercase; font-size: 10pt; margin-top: 3pt;">Build Status</div>
         </div>
         <div>
           <div class="tiny" style="color: var(--paper); opacity: 0.7;">Prepared</div>
