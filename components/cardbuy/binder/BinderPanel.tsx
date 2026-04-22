@@ -27,6 +27,43 @@ import type {
 } from "@/lib/supabase/types";
 
 /* ─────────────────────────────────────────────────────────────────
+ * Region glossary — mirrors `lib/fixtures/pokedex.ts` REGIONS. Kept
+ * client-local so this file can be imported without pulling the
+ * server-only fixture module.
+ * ───────────────────────────────────────────────────────────────── */
+type RegionId =
+  | "all"
+  | "kanto"
+  | "johto"
+  | "hoenn"
+  | "sinnoh"
+  | "unova"
+  | "kalos"
+  | "alola"
+  | "galar"
+  | "paldea";
+
+type RegionDef = {
+  id: RegionId;
+  label: string;
+  start: number;
+  end: number;
+};
+
+const REGION_TABS: RegionDef[] = [
+  { id: "all",    label: "All",    start: 1,   end: 10000 },
+  { id: "kanto",  label: "Kanto",  start: 1,   end: 151 },
+  { id: "johto",  label: "Johto",  start: 152, end: 251 },
+  { id: "hoenn",  label: "Hoenn",  start: 252, end: 386 },
+  { id: "sinnoh", label: "Sinnoh", start: 387, end: 493 },
+  { id: "unova",  label: "Unova",  start: 494, end: 649 },
+  { id: "kalos",  label: "Kalos",  start: 650, end: 721 },
+  { id: "alola",  label: "Alola",  start: 722, end: 809 },
+  { id: "galar",  label: "Galar",  start: 810, end: 905 },
+  { id: "paldea", label: "Paldea", start: 906, end: 1025 },
+];
+
+/* ─────────────────────────────────────────────────────────────────
  * Types — kept client-safe. The server page constructs these from
  * the fixture/dex registry and passes them in as plain data.
  * ───────────────────────────────────────────────────────────────── */
@@ -149,24 +186,49 @@ const TYPE_COLOR: Record<string, string> = {
   Dragon: "bg-[#e2c34b]",
 };
 
+/** Standard page-to-page flip within a single filter set. */
 type FlipState = {
   dir: "next" | "prev";
   from: number;
   to: number;
+  /** When a filter change triggers the flip (region, etc.), the "from"
+   *  slots can't be derived from the current filtered array — that
+   *  array has already moved to the new filter. snapshotFrom holds the
+   *  frozen previous-page content so the outgoing overlay still shows
+   *  where the user was. */
+  snapshotFrom?: BinderSlotPayload[];
 };
 
 export function BinderPanel({
   allSlots,
-  totalOwned,
-  totalSlots,
   initialPageIndex,
   userDisplayName,
   shelfEntries,
 }: Props) {
-  const totalPages = Math.ceil(allSlots.length / SLOTS_PER_PAGE);
+  // totalOwned + totalSlots are passed by the server page but the
+  // panel now derives both from the active region filter — page-level
+  // counts would be wrong for Johto / Paldea / etc.
+  const [region, setRegion] = useState<RegionId>("all");
+
+  /* ── Filtered slot list — dex numbers inside the active region ── */
+  const filteredSlots = useMemo(() => {
+    if (region === "all") return allSlots;
+    const def = REGION_TABS.find((r) => r.id === region);
+    if (!def) return allSlots;
+    return allSlots.filter(
+      (s) => s.dexNumber >= def.start && s.dexNumber <= def.end,
+    );
+  }, [allSlots, region]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredSlots.length / SLOTS_PER_PAGE),
+  );
+
   const [pageIndex, setPageIndex] = useState(
     Math.min(Math.max(0, initialPageIndex), Math.max(0, totalPages - 1)),
   );
+
   const [flip, setFlip] = useState<FlipState | null>(null);
 
   const [hoveredDex, setHoveredDex] = useState<number | null>(null);
@@ -185,13 +247,17 @@ export function BinderPanel({
     flip !== null ? (flip.dir === "next" ? flip.from : flip.to) : null;
 
   const baseSlots = useMemo(
-    () => sliceSlots(allSlots, basePage),
-    [allSlots, basePage],
+    () => sliceSlots(filteredSlots, basePage),
+    [filteredSlots, basePage],
   );
-  const overlaySlots = useMemo(
-    () => (overlayPage !== null ? sliceSlots(allSlots, overlayPage) : null),
-    [allSlots, overlayPage],
-  );
+  const overlaySlots = useMemo(() => {
+    if (overlayPage === null) return null;
+    // Filter changes use snapshotFrom because the filteredSlots array
+    // has already been swapped out — slicing it would show the NEW
+    // filter's content, not the old one.
+    if (flip?.snapshotFrom) return flip.snapshotFrom;
+    return sliceSlots(filteredSlots, overlayPage);
+  }, [filteredSlots, overlayPage, flip]);
 
   const activeDex = lockedDex ?? hoveredDex;
   const activeSlot = useMemo(
@@ -219,6 +285,27 @@ export function BinderPanel({
       setFlip({ dir, from: pageIndex, to });
     },
     [flip, pageIndex, totalPages],
+  );
+
+  /* ── Region change — trigger the flip with a snapshot ────────── */
+  const changeRegion = useCallback(
+    (next: RegionId) => {
+      if (next === region) return;
+      const reduced =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // Capture the current page's content BEFORE state change so the
+      // outgoing overlay renders with the user's last-seen slots.
+      const snapshot = sliceSlots(filteredSlots, pageIndex);
+      setHoveredDex(null);
+      setLockedDex(null);
+      setRegion(next);
+      setPageIndex(0);
+      if (reduced) return;
+      setFlip({ dir: "next", from: 0, to: 0, snapshotFrom: snapshot });
+    },
+    [region, filteredSlots, pageIndex],
   );
 
   const handleFlipEnd = useCallback(() => {
@@ -324,26 +411,51 @@ export function BinderPanel({
     setHoveredDex(null);
   }, []);
 
-  const pct = Math.round((totalOwned / Math.max(1, totalSlots)) * 100);
+  // Filtered-view counts so the header reflects the visible region
+  // rather than the whole national dex.
+  const filteredOwned = useMemo(
+    () => filteredSlots.filter((s) => s.owned !== null).length,
+    [filteredSlots],
+  );
+  const filteredTotal = filteredSlots.length;
+  const pct = Math.round(
+    (filteredOwned / Math.max(1, filteredTotal)) * 100,
+  );
   const displayPage = flip ? flip.to : pageIndex;
-  const rangeStart = displayPage * SLOTS_PER_PAGE + 1;
-  const rangeEnd = Math.min(totalSlots, (displayPage + 1) * SLOTS_PER_PAGE);
+  // Show actual dex numbers on the current page, not 1-based positions
+  // — otherwise "Johto" would read "#001–#009" even though the user is
+  // looking at #152–#160.
+  const displayedSlots = useMemo(
+    () => sliceSlots(filteredSlots, displayPage),
+    [filteredSlots, displayPage],
+  );
+  const rangeStart = displayedSlots[0]?.dexNumber ?? 1;
+  const rangeEnd =
+    displayedSlots[displayedSlots.length - 1]?.dexNumber ?? rangeStart;
+
+  // Shelf hover state — same contract as the dex grid: hover drives
+  // `hoveredShelf`, click toggles `lockedShelf`, the detail pane on
+  // the bottom panel reads locked ?? hovered.
+  const [hoveredShelf, setHoveredShelf] = useState<string | null>(null);
+  const [lockedShelf, setLockedShelf] = useState<string | null>(null);
+  const activeShelfId = lockedShelf ?? hoveredShelf;
+  const activeShelfEntry = useMemo(
+    () =>
+      shelfEntries?.find((e) => e.id === activeShelfId) ?? null,
+    [shelfEntries, activeShelfId],
+  );
 
   return (
     <div ref={panelRef} className="relative">
-      {/* Side shelf — Trainer / Energy / anything without a dex slot.
-          Positioned absolute so it peeks out from behind the binder's
-          right edge. Only rendered when the user actually has non-
-          Pokédex cards, and only from md+ where there's gutter space
-          for it to overhang cleanly. */}
-      {shelfEntries && shelfEntries.length > 0 ? (
-        <div
-          className="hidden md:block absolute top-10 bottom-10 left-[calc(100%-18px)] w-[96px] z-[0]"
-          aria-label="Energy and trainer cards"
-        >
-          <Shelf entries={shelfEntries} />
-        </div>
-      ) : null}
+      {/* Region glossary — tabs along the top. Clicking a region
+          fires the page-turn animation with a snapshot of the current
+          page as the outgoing overlay, then jumps to page 0 of the
+          new region. */}
+      <RegionTabs
+        active={region}
+        onChange={changeRegion}
+        disabled={flip !== null}
+      />
 
       <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative z-[1]">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.45fr] rounded-sm overflow-hidden border-[2px] border-ink">
@@ -356,10 +468,15 @@ export function BinderPanel({
               />
             ) : (
               <EmptyState
-                totalOwned={totalOwned}
-                totalSlots={totalSlots}
+                totalOwned={filteredOwned}
+                totalSlots={filteredTotal}
                 pct={pct}
                 userDisplayName={userDisplayName}
+                regionLabel={
+                  region === "all"
+                    ? null
+                    : REGION_TABS.find((r) => r.id === region)?.label ?? null
+                }
               />
             )}
           </section>
@@ -394,7 +511,7 @@ export function BinderPanel({
                 {String(rangeEnd).padStart(3, "0")}
               </div>
               <div className="font-display text-[10px] tracking-[0.2em] text-muted tabular-nums">
-                {totalOwned} / {totalSlots} owned
+                {filteredOwned} / {filteredTotal} owned
               </div>
             </div>
 
@@ -475,23 +592,25 @@ export function BinderPanel({
         </div>
       </div>
 
-      {/* Depth hairlines — suggest the binder has thickness. */}
-      <div
-        aria-hidden
-        className="absolute left-2 right-2 -bottom-[3px] h-[3px] bg-ink/25 rounded-b-md"
-      />
-      <div
-        aria-hidden
-        className="absolute left-4 right-4 -bottom-[6px] h-[2px] bg-ink/15 rounded-b-md"
-      />
-
-      {/* Mobile shelf — rendered as a horizontal scrollable strip below
-          the binder. The desktop version docks behind the right edge;
-          on phones there's no gutter for that trick so we show the
-          shelf as its own full-width section instead. */}
+      {/* Bottom shelf — Trainer / Energy / anything without a dex slot.
+          Replaces the old right-edge peek-out with a dedicated panel
+          rendered directly below the binder. Has its own two-pane
+          layout: a detail pane on the left (fed by shelf-card hover /
+          click) mirroring the main binder's info pane, and the shelf
+          cards themselves as a horizontal scroll rail on the right. */}
       {shelfEntries && shelfEntries.length > 0 ? (
-        <div className="md:hidden mt-4">
-          <MobileShelf entries={shelfEntries} />
+        <div className="mt-4 md:mt-5">
+          <BottomShelfPanel
+            entries={shelfEntries}
+            activeId={activeShelfId}
+            lockedId={lockedShelf}
+            onEnter={(id) => setHoveredShelf(id)}
+            onLeave={() => setHoveredShelf(null)}
+            onClick={(id) =>
+              setLockedShelf((cur) => (cur === id ? null : id))
+            }
+            activeEntry={activeShelfEntry}
+          />
         </div>
       ) : null}
     </div>
@@ -509,140 +628,294 @@ function sliceSlots(
 function noop() {}
 
 /* ─────────────────────────────────────────────────────────────────
- * Side shelf — Trainer / Energy cards that don't belong in the
- * national Pokédex. Narrow single-column strip attached behind the
- * binder's right edge, overhanging into the page gutter. Each card
- * is rendered as a landscape thumbnail (portrait source rotated 90°)
- * so the shelf can stay compact without cropping.
+ * Region tabs — horizontal scrolling pill bar above the binder.
+ * Clicking a tab fires `changeRegion` which triggers the page-flip
+ * animation with the old page content captured as the outgoing
+ * overlay snapshot.
  * ───────────────────────────────────────────────────────────────── */
 
-function Shelf({ entries }: { entries: BinderShelfEntry[] }) {
+function RegionTabs({
+  active,
+  onChange,
+  disabled,
+}: {
+  active: RegionId;
+  onChange: (next: RegionId) => void;
+  disabled: boolean;
+}) {
   return (
-    <div className="h-full pop-static rounded-r-md bg-teal overflow-hidden flex flex-col">
-      <div
-        className="bg-paper-strong border-b-2 border-ink py-1.5 px-1 text-center"
-        title="Energy and trainer cards"
-      >
-        <div className="font-display text-[8px] tracking-[0.2em] text-ink leading-none">
-          ENERGY
-        </div>
-        <div className="font-display text-[8px] tracking-[0.2em] text-ink/60 leading-none mt-0.5">
-          TRAINER
-        </div>
-      </div>
-      <ul className="flex-1 overflow-y-auto scrollbar-none bg-paper/70 p-[5px] flex flex-col gap-[5px]">
-        {entries.map((entry) => (
-          <ShelfCard key={entry.id} entry={entry} />
-        ))}
-      </ul>
-      <div className="bg-paper-strong border-t-2 border-ink py-1 text-center font-display text-[9px] tracking-wider text-ink/70 tabular-nums">
-        {entries.length}
+    <nav
+      className="flex items-stretch gap-1.5 md:gap-2 overflow-x-auto scrollbar-none -mx-4 md:-mx-0 px-4 md:px-0 mb-3 md:mb-4"
+      aria-label="Filter by region"
+    >
+      {REGION_TABS.map((r) => {
+        const isActive = r.id === active;
+        return (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => onChange(r.id)}
+            disabled={disabled}
+            aria-pressed={isActive}
+            className={`shrink-0 pop-card rounded-sm px-2.5 py-1 font-display text-[10px] tracking-[0.18em] uppercase transition-[background] duration-150 disabled:opacity-50 ${
+              isActive
+                ? "bg-ink text-paper-strong"
+                : "bg-paper-strong text-ink hover:bg-yellow"
+            }`}
+          >
+            {r.label}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Bottom shelf panel — Trainer / Energy / anything without a dex
+ * slot. Two-pane layout mirroring the main binder: a detail pane on
+ * the left driven by shelf-card hover / click, and a horizontal scroll
+ * rail of the shelf cards themselves on the right. Same interaction
+ * vocabulary as the dex grid.
+ * ───────────────────────────────────────────────────────────────── */
+
+function BottomShelfPanel({
+  entries,
+  activeId,
+  lockedId,
+  activeEntry,
+  onEnter,
+  onLeave,
+  onClick,
+}: {
+  entries: BinderShelfEntry[];
+  activeId: string | null;
+  lockedId: string | null;
+  activeEntry: BinderShelfEntry | null;
+  onEnter: (id: string) => void;
+  onLeave: () => void;
+  onClick: (id: string) => void;
+}) {
+  const energyCount = entries.filter((e) => e.supertype === "Energy").length;
+  const trainerCount = entries.filter((e) => e.supertype === "Trainer").length;
+
+  return (
+    <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.6fr] rounded-sm overflow-hidden border-[2px] border-ink">
+        {/* Detail pane — mirrors the main binder's info pane. */}
+        <section className="bg-paper-strong p-4 md:p-5 min-h-[160px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
+          {activeEntry ? (
+            <ShelfDetail
+              entry={activeEntry}
+              locked={lockedId !== null && lockedId === activeEntry.id}
+            />
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <div className="font-display text-[10px] tracking-[0.25em] text-muted">
+                Other cards
+              </div>
+              <h3 className="font-display text-[18px] md:text-[22px] leading-none tracking-tight text-ink">
+                Energy &amp; Trainers
+              </h3>
+              <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-secondary">
+                <div>
+                  <span className="font-display tabular-nums text-[16px] text-ink">
+                    {energyCount}
+                  </span>{" "}
+                  Energy
+                </div>
+                <div>
+                  <span className="font-display tabular-nums text-[16px] text-ink">
+                    {trainerCount}
+                  </span>{" "}
+                  Trainer
+                </div>
+              </div>
+              <p className="text-[11px] leading-relaxed text-secondary mt-3">
+                These don&rsquo;t belong in the Pokédex, but they live
+                here. <span className="text-ink/60">Hover</span> a card
+                to preview it.{" "}
+                <span className="text-ink/60">Click</span> to lock.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* Shelf rail — scrollable horizontal strip of cards. */}
+        <section className="bg-paper-strong p-3 md:p-4 min-h-[160px]">
+          <div className="flex items-baseline justify-between mb-2 px-1">
+            <div className="font-display text-[10px] tracking-[0.2em] text-muted">
+              {entries.length} cards
+            </div>
+            <div className="font-display text-[10px] tracking-[0.2em] text-muted">
+              scroll →
+            </div>
+          </div>
+          <ul
+            className="flex gap-2 md:gap-2.5 overflow-x-auto scrollbar-none pb-1"
+            aria-label="Energy and trainer cards"
+          >
+            {entries.map((entry) => (
+              <ShelfRailCard
+                key={entry.id}
+                entry={entry}
+                active={activeId === entry.id}
+                locked={lockedId === entry.id}
+                onEnter={onEnter}
+                onLeave={onLeave}
+                onClick={onClick}
+              />
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );
 }
 
-/**
- * Mobile shelf — a horizontal scroll rail rendered below the binder
- * on screens narrower than `md`. Cards render portrait (same as a
- * real card) rather than landscape-rotated, because there's room
- * horizontally and rotation would be disorienting at thumb-size.
- */
-function MobileShelf({ entries }: { entries: BinderShelfEntry[] }) {
+function ShelfDetail({
+  entry,
+  locked,
+}: {
+  entry: BinderShelfEntry;
+  locked: boolean;
+}) {
+  const variant =
+    entry.variant === "graded"
+      ? `${entry.grading_company} ${entry.grade}`
+      : entry.condition ?? "";
+  const supertypeTone =
+    entry.supertype === "Energy"
+      ? "bg-yellow"
+      : entry.supertype === "Trainer"
+        ? "bg-pink"
+        : "bg-paper";
   return (
-    <section className="pop-static rounded-md bg-paper-strong overflow-hidden">
-      <div className="flex items-baseline justify-between px-3 py-2 border-b-2 border-ink">
-        <h3 className="font-display text-[10px] tracking-[0.25em] text-ink">
-          Energy · Trainer
-        </h3>
-        <span className="font-display text-[10px] tracking-wider tabular-nums text-muted">
-          {entries.length}
+    <div className="flex flex-col h-full relative">
+      {locked ? (
+        <span className="absolute top-0 right-0 pop-card rounded-sm bg-yellow px-2 py-0.5 font-display text-[9px] tracking-[0.2em] text-ink z-10">
+          Locked · esc
         </span>
+      ) : null}
+      <div className="flex items-start gap-3">
+        {entry.imageSmall ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={entry.imageSmall}
+            alt={entry.cardName}
+            className="w-[88px] h-auto shrink-0 border-2 border-ink rounded-sm bg-paper pointer-events-none"
+          />
+        ) : null}
+        <div className="flex flex-col min-w-0 gap-1">
+          <span
+            className={`inline-block self-start border-2 border-ink rounded-sm px-1.5 py-0.5 font-display text-[9px] tracking-[0.2em] uppercase ${supertypeTone}`}
+          >
+            {entry.supertype}
+          </span>
+          <div className="font-display text-[16px] md:text-[18px] leading-tight tracking-tight text-ink break-words">
+            {entry.cardName}
+          </div>
+          <div className="text-[11px] text-muted">
+            {entry.setName}
+            {entry.rarity ? ` · ${entry.rarity}` : ""}
+          </div>
+          {entry.subtypes.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {entry.subtypes.slice(0, 3).map((st) => (
+                <span
+                  key={st}
+                  className="bg-paper-strong border-2 border-ink rounded-sm px-1.5 py-0.5 font-display text-[9px] tracking-wider"
+                >
+                  {st}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
-      <ul
-        className="flex gap-2 overflow-x-auto scrollbar-none bg-paper/60 p-2"
-        aria-label="Energy and trainer cards"
+      <div className="mt-3 pt-3 border-t-2 border-ink/15 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] text-secondary">
+        <div>
+          <span className="font-display text-[10px] tracking-wider text-muted">
+            Qty
+          </span>{" "}
+          <span className="font-display tabular-nums text-ink">
+            ×{entry.quantity}
+          </span>
+        </div>
+        {variant ? (
+          <div>
+            <span className="font-display text-[10px] tracking-wider text-muted">
+              Variant
+            </span>{" "}
+            <span className="font-display tracking-wider text-ink">
+              {variant}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ShelfRailCard({
+  entry,
+  active,
+  locked,
+  onEnter,
+  onLeave,
+  onClick,
+}: {
+  entry: BinderShelfEntry;
+  active: boolean;
+  locked: boolean;
+  onEnter: (id: string) => void;
+  onLeave: () => void;
+  onClick: (id: string) => void;
+}) {
+  const toneBg =
+    entry.supertype === "Energy"
+      ? "bg-yellow"
+      : entry.supertype === "Trainer"
+        ? "bg-pink"
+        : "bg-paper-strong";
+  const ring = active
+    ? locked
+      ? "ring-[3px] ring-yellow"
+      : "ring-[3px] ring-ink/50"
+    : "";
+  return (
+    <li className="shrink-0">
+      <button
+        type="button"
+        onMouseEnter={() => onEnter(entry.id)}
+        onFocus={() => onEnter(entry.id)}
+        onMouseLeave={onLeave}
+        onBlur={onLeave}
+        onClick={() => onClick(entry.id)}
+        aria-pressed={locked}
+        aria-label={`${entry.cardName}${
+          entry.quantity > 1 ? ` × ${entry.quantity}` : ""
+        }`}
+        className={`relative w-[68px] md:w-[76px] aspect-[5/7] border-2 border-ink rounded-sm overflow-hidden transition-shadow ${toneBg} ${ring}`}
       >
-        {entries.map((entry) => (
-          <MobileShelfCard key={entry.id} entry={entry} />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function MobileShelfCard({ entry }: { entry: BinderShelfEntry }) {
-  const variant =
-    entry.variant === "graded"
-      ? `${entry.grading_company} ${entry.grade}`
-      : entry.condition ?? "";
-  const toneBg =
-    entry.supertype === "Energy"
-      ? "bg-yellow"
-      : entry.supertype === "Trainer"
-        ? "bg-pink"
-        : "bg-paper-strong";
-  return (
-    <li
-      className={`relative shrink-0 w-[64px] aspect-[5/7] border-2 border-ink rounded-sm overflow-hidden ${toneBg}`}
-      title={`${entry.cardName} · ${entry.setName}${variant ? ` · ${variant}` : ""}`}
-    >
-      {entry.imageSmall ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={entry.imageSmall}
-          alt={entry.cardName}
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center font-display text-[8px] tracking-wider text-ink/60 text-center px-1 leading-tight">
-          {entry.cardName}
-        </div>
-      )}
-      {entry.quantity > 1 ? (
-        <span className="absolute top-0.5 right-0.5 bg-teal border-2 border-ink rounded-sm px-1 font-display text-[8px] tabular-nums leading-tight">
-          ×{entry.quantity}
-        </span>
-      ) : null}
-    </li>
-  );
-}
-
-function ShelfCard({ entry }: { entry: BinderShelfEntry }) {
-  const variant =
-    entry.variant === "graded"
-      ? `${entry.grading_company} ${entry.grade}`
-      : entry.condition ?? "";
-  const toneBg =
-    entry.supertype === "Energy"
-      ? "bg-yellow"
-      : entry.supertype === "Trainer"
-        ? "bg-pink"
-        : "bg-paper-strong";
-  return (
-    <li
-      className={`relative w-full h-[56px] border-2 border-ink rounded-sm overflow-hidden ${toneBg}`}
-      title={`${entry.cardName} · ${entry.setName}${variant ? ` · ${variant}` : ""}`}
-    >
-      {entry.imageSmall ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={entry.imageSmall}
-          alt={entry.cardName}
-          width={56}
-          height={78}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90 max-w-none pointer-events-none"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center font-display text-[8px] tracking-wider text-ink/60 text-center px-1 leading-tight">
-          {entry.cardName}
-        </div>
-      )}
-      {entry.quantity > 1 ? (
-        <span className="absolute top-0.5 right-0.5 bg-teal border-2 border-ink rounded-sm px-1 font-display text-[8px] tabular-nums leading-tight">
-          ×{entry.quantity}
-        </span>
-      ) : null}
+        {entry.imageSmall ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={entry.imageSmall}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center font-display text-[9px] tracking-wider text-ink/60 text-center px-1 leading-tight">
+            {entry.cardName}
+          </div>
+        )}
+        {entry.quantity > 1 ? (
+          <span className="absolute top-0.5 right-0.5 bg-teal border-2 border-ink rounded-sm px-1 font-display text-[9px] tabular-nums leading-tight pointer-events-none">
+            ×{entry.quantity}
+          </span>
+        ) : null}
+      </button>
     </li>
   );
 }
@@ -708,11 +981,13 @@ function EmptyState({
   totalSlots,
   pct,
   userDisplayName,
+  regionLabel,
 }: {
   totalOwned: number;
   totalSlots: number;
   pct: number;
   userDisplayName: string;
+  regionLabel: string | null;
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -720,7 +995,7 @@ function EmptyState({
         {userDisplayName}&rsquo;s Pokédex
       </div>
       <h2 className="font-display text-[26px] md:text-[32px] leading-[0.95] tracking-tight text-ink mt-1">
-        National Pokédex
+        {regionLabel ?? "National Pokédex"}
       </h2>
 
       <div className="mt-6">

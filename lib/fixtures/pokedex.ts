@@ -59,3 +59,51 @@ export const NATIONAL_DEX: DexEntry[] = (() => {
  *  full national dex. Code migrating to the new name can import
  *  NATIONAL_DEX directly. */
 export const GEN1_DEX = NATIONAL_DEX;
+
+/* ─────────────────────────────────────────────────────────────────
+ * Region glossary — national-dex ranges grouped by Pokémon region.
+ * Used by the binder's region tab filter. Ranges are inclusive.
+ *
+ * Hisui (899–905) is bundled into Galar for the UI since it's a
+ * generation-8 expansion and its 7 entries don't warrant their own
+ * tab. A future revision can split them if someone collects them
+ * seriously.
+ * ───────────────────────────────────────────────────────────────── */
+
+export type RegionId =
+  | "kanto"
+  | "johto"
+  | "hoenn"
+  | "sinnoh"
+  | "unova"
+  | "kalos"
+  | "alola"
+  | "galar"
+  | "paldea";
+
+export type Region = {
+  id: RegionId;
+  label: string;
+  gen: number;
+  start: number;
+  end: number;
+};
+
+export const REGIONS: Region[] = [
+  { id: "kanto",  label: "Kanto",  gen: 1, start: 1,    end: 151 },
+  { id: "johto",  label: "Johto",  gen: 2, start: 152,  end: 251 },
+  { id: "hoenn",  label: "Hoenn",  gen: 3, start: 252,  end: 386 },
+  { id: "sinnoh", label: "Sinnoh", gen: 4, start: 387,  end: 493 },
+  { id: "unova",  label: "Unova",  gen: 5, start: 494,  end: 649 },
+  { id: "kalos",  label: "Kalos",  gen: 6, start: 650,  end: 721 },
+  { id: "alola",  label: "Alola",  gen: 7, start: 722,  end: 809 },
+  { id: "galar",  label: "Galar",  gen: 8, start: 810,  end: 905 },
+  { id: "paldea", label: "Paldea", gen: 9, start: 906,  end: 1025 },
+];
+
+export function regionForDex(n: number): Region | null {
+  for (const r of REGIONS) {
+    if (n >= r.start && n <= r.end) return r;
+  }
+  return null;
+}
