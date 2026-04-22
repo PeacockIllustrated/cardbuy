@@ -704,10 +704,16 @@ function BottomShelfPanel({
   const trainerCount = entries.filter((e) => e.supertype === "Trainer").length;
 
   return (
+    /*
+     * Visually this is a "mini-binder" — same teal cover, same two-page
+     * layout, same ringed spine between the two panes — but half the
+     * vertical weight of the main binder so it reads as an extension
+     * popping out of the bottom rather than a second artefact.
+     */
     <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.6fr] rounded-sm overflow-hidden border-[2px] border-ink">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.45fr] rounded-sm overflow-hidden border-[2px] border-ink">
         {/* Detail pane — mirrors the main binder's info pane. */}
-        <section className="bg-paper-strong p-4 md:p-5 min-h-[160px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
+        <section className="bg-paper-strong p-4 md:p-5 min-h-[260px] md:min-h-[320px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
           {activeEntry ? (
             <ShelfDetail
               entry={activeEntry}
@@ -745,10 +751,31 @@ function BottomShelfPanel({
           )}
         </section>
 
-        {/* Shelf rail — scrollable horizontal strip of cards. */}
-        <section className="bg-paper-strong p-3 md:p-4 min-h-[160px]">
-          <div className="flex items-baseline justify-between mb-2 px-1">
-            <div className="font-display text-[10px] tracking-[0.2em] text-muted">
+        {/* ─── SPINE · rings — same treatment as the main binder ── */}
+        <div
+          className="hidden md:block relative bg-ink/[0.06] border-x-[2px] border-ink"
+          aria-hidden
+        >
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, rgba(10,10,10,0.1) 0%, rgba(10,10,10,0) 30%, rgba(10,10,10,0) 70%, rgba(10,10,10,0.1) 100%)",
+            }}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-around py-6">
+            {[0, 1].map((i) => (
+              <Ring key={i} />
+            ))}
+          </div>
+        </div>
+
+        {/* Shelf rail — horizontally-scrolling row of binder-sized
+            cards. Each slot uses aspect-[5/7] matching the dex grid,
+            so visually the rail is "a row of the binder's pages". */}
+        <section className="bg-paper-strong p-4 md:p-5 min-h-[260px] md:min-h-[320px]">
+          <div className="flex items-baseline justify-between mb-3 md:mb-4 px-1">
+            <div className="font-display text-[10px] tracking-[0.2em] text-muted tabular-nums">
               {entries.length} cards
             </div>
             <div className="font-display text-[10px] tracking-[0.2em] text-muted">
@@ -756,7 +783,7 @@ function BottomShelfPanel({
             </div>
           </div>
           <ul
-            className="flex gap-2 md:gap-2.5 overflow-x-auto scrollbar-none pb-1"
+            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-none pb-1"
             aria-label="Energy and trainer cards"
           >
             {entries.map((entry) => (
@@ -884,17 +911,17 @@ function ShelfRailCard({
   onLeave: () => void;
   onClick: (id: string) => void;
 }) {
-  const toneBg =
-    entry.supertype === "Energy"
-      ? "bg-yellow"
-      : entry.supertype === "Trainer"
-        ? "bg-pink"
-        : "bg-paper-strong";
   const ring = active
     ? locked
       ? "ring-[3px] ring-yellow"
       : "ring-[3px] ring-ink/50"
     : "";
+  const supertypeChipBg =
+    entry.supertype === "Energy"
+      ? "bg-yellow"
+      : entry.supertype === "Trainer"
+        ? "bg-pink"
+        : "bg-paper-strong";
   return (
     <li className="shrink-0">
       <button
@@ -908,22 +935,37 @@ function ShelfRailCard({
         aria-label={`${entry.cardName}${
           entry.quantity > 1 ? ` × ${entry.quantity}` : ""
         }`}
-        className={`relative w-[68px] md:w-[76px] aspect-[5/7] border-2 border-ink rounded-sm overflow-hidden transition-shadow ${toneBg} ${ring}`}
+        /* Size matches the main dex grid slot exactly — same
+           aspect-[5/7], same CardImage size="sm" inside. Inset well
+           + padding mirror the owned-slot visual so a row of shelf
+           cards visually reads as "same kind of thing" as the grid. */
+        className={`relative w-[120px] aspect-[5/7] rounded-md text-left transition-shadow ${ring}`}
       >
-        {entry.imageSmall ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-md bg-paper/40"
+          style={{ boxShadow: "inset 0 0 0 2px rgba(10,10,10,0.1)" }}
+        />
+        <div className="relative h-full w-full flex items-center justify-center p-1">
+          <CardImage
             src={entry.imageSmall}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            alt={entry.cardName}
+            size="sm"
+            rarity={entry.rarity ?? undefined}
+            interactive
+            hideBadge
           />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center font-display text-[9px] tracking-wider text-ink/60 text-center px-1 leading-tight">
-            {entry.cardName}
-          </div>
-        )}
+        </div>
+        {/* Supertype sticker top-left — colour-tinted so rows of all
+            Energy / all Trainer read at a glance without overloading
+            the full card back. */}
+        <span
+          className={`absolute -top-1 -left-1 z-[4] ${supertypeChipBg} border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider rotate-[-4deg] pointer-events-none rounded-sm leading-none`}
+        >
+          {entry.supertype === "Energy" ? "E" : entry.supertype === "Trainer" ? "T" : "?"}
+        </span>
         {entry.quantity > 1 ? (
-          <span className="absolute top-0.5 right-0.5 bg-teal border-2 border-ink rounded-sm px-1 font-display text-[9px] tabular-nums leading-tight pointer-events-none">
+          <span className="absolute -bottom-1 -right-1 z-[4] bg-teal border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider rotate-[3deg] pointer-events-none tabular-nums rounded-sm leading-none">
             ×{entry.quantity}
           </span>
         ) : null}
@@ -1887,7 +1929,11 @@ function DexSlot({
       {slot.owned ? (
         <OwnedSlotVisual slot={slot} grailed={grailed} dexLabel={dexLabel} />
       ) : (
-        <MissingSlotVisual dexLabel={dexLabel} name={slot.dexName} />
+        <MissingSlotVisual
+          dexLabel={dexLabel}
+          name={slot.dexName}
+          wishlisted={slot.onWishlist}
+        />
       )}
     </button>
   );
@@ -1952,9 +1998,11 @@ function OwnedSlotVisual({
 function MissingSlotVisual({
   dexLabel,
   name,
+  wishlisted,
 }: {
   dexLabel: string;
   name: string;
+  wishlisted: boolean;
 }) {
   return (
     <div className="absolute inset-0 rounded-md border-[2px] border-dashed border-ink/30 bg-paper/60 overflow-hidden flex flex-col items-center justify-center gap-1">
@@ -1964,6 +2012,16 @@ function MissingSlotVisual({
       <div className="font-display text-[10px] tracking-wider text-ink/40 uppercase px-1 text-center line-clamp-1">
         {name}
       </div>
+      {/* Wishlist heart — pink to differentiate from the gold Grail
+          star on owned slots. Signals "chasing this one" at a glance. */}
+      {wishlisted ? (
+        <span
+          className="absolute -top-1.5 -right-1.5 z-[4] w-6 h-6 grid place-items-center rounded-full bg-pink border-2 border-ink font-display text-[11px] leading-none rotate-[8deg] pointer-events-none"
+          aria-label="On wishlist"
+        >
+          ♥
+        </span>
+      ) : null}
     </div>
   );
 }
