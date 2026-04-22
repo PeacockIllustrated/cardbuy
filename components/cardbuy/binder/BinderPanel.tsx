@@ -683,6 +683,8 @@ function RegionTabs({
  * vocabulary as the dex grid.
  * ───────────────────────────────────────────────────────────────── */
 
+const SHELF_SLOTS_PER_PAGE = 9;
+
 function BottomShelfPanel({
   entries,
   activeId,
@@ -703,17 +705,40 @@ function BottomShelfPanel({
   const energyCount = entries.filter((e) => e.supertype === "Energy").length;
   const trainerCount = entries.filter((e) => e.supertype === "Trainer").length;
 
+  // Client-side pagination mirroring the main binder — 3×3 page, with
+  // prev / next controls. No page-flip animation here (the shelf is a
+  // secondary surface — page turns would compete with the main
+  // binder's flip for attention).
+  const totalShelfPages = Math.max(
+    1,
+    Math.ceil(entries.length / SHELF_SLOTS_PER_PAGE),
+  );
+  const [shelfPageIndex, setShelfPageIndex] = useState(0);
+  // If entries shrink (e.g. user removes a card) clamp the page index
+  // back into range on the next render.
+  const clampedPageIndex = Math.min(shelfPageIndex, totalShelfPages - 1);
+  const pageStart = clampedPageIndex * SHELF_SLOTS_PER_PAGE;
+  const pageEntries = entries.slice(
+    pageStart,
+    pageStart + SHELF_SLOTS_PER_PAGE,
+  );
+  const fillerCount = SHELF_SLOTS_PER_PAGE - pageEntries.length;
+
   return (
     /*
      * Visually this is a "mini-binder" — same teal cover, same two-page
-     * layout, same ringed spine between the two panes — but half the
-     * vertical weight of the main binder so it reads as an extension
-     * popping out of the bottom rather than a second artefact.
+     * layout, same ringed spine between the two panes — so it reads as
+     * an extension popping out of the bottom rather than a second
+     * artefact. Sized ~1/3 the height of the main binder in the grid
+     * (info pane fixed height so there's no layout shift when a card
+     * is hovered or locked).
      */
     <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.45fr] rounded-sm overflow-hidden border-[2px] border-ink">
-        {/* Detail pane — mirrors the main binder's info pane. */}
-        <section className="bg-paper-strong p-4 md:p-5 min-h-[260px] md:min-h-[320px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.75fr] rounded-sm overflow-hidden border-[2px] border-ink">
+        {/* Detail pane — mirrors the main binder's info pane. Height
+            is fixed regardless of selection state so hovering a shelf
+            card does NOT push the grid around. */}
+        <section className="bg-paper-strong p-4 md:p-5 min-h-[420px] md:min-h-[560px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
           {activeEntry ? (
             <ShelfDetail
               entry={activeEntry}
@@ -770,23 +795,22 @@ function BottomShelfPanel({
           </div>
         </div>
 
-        {/* Shelf rail — horizontally-scrolling row of binder-sized
-            cards. Each slot uses aspect-[5/7] matching the dex grid,
-            so visually the rail is "a row of the binder's pages". */}
-        <section className="bg-paper-strong p-4 md:p-5 min-h-[260px] md:min-h-[320px]">
+        {/* Shelf rail — 3×3 grid of binder-sized cards, exactly like
+            the main dex page. Paginated with prev/next arrows. */}
+        <section className="bg-paper-strong p-4 md:p-5 flex flex-col">
           <div className="flex items-baseline justify-between mb-3 md:mb-4 px-1">
             <div className="font-display text-[10px] tracking-[0.2em] text-muted tabular-nums">
               {entries.length} cards
             </div>
-            <div className="font-display text-[10px] tracking-[0.2em] text-muted">
-              scroll →
+            <div className="font-display text-[10px] tracking-[0.2em] text-muted tabular-nums">
+              Page {clampedPageIndex + 1} / {totalShelfPages}
             </div>
           </div>
           <ul
-            className="flex gap-3 md:gap-4 overflow-x-auto scrollbar-none pb-1"
+            className="grid grid-cols-3 gap-3 md:gap-4 flex-1"
             aria-label="Energy and trainer cards"
           >
-            {entries.map((entry) => (
+            {pageEntries.map((entry) => (
               <ShelfRailCard
                 key={entry.id}
                 entry={entry}
@@ -799,16 +823,67 @@ function BottomShelfPanel({
             ))}
             {/* Trailing empty card-holder slots — dashed frames that
                 make the shelf read as "a binder page with room for
-                more" rather than just a row of whatever happens to
-                be owned. Rendered unconditionally so the shelf always
-                has a destination for new adds. */}
-            {[0, 1, 2].map((i) => (
+                more" rather than just a grid of whatever happens to
+                be owned. Fills the 3×3 so the grid never reflows. */}
+            {Array.from({ length: fillerCount }).map((_, i) => (
               <ShelfEmptyHolder key={`empty-${i}`} />
             ))}
           </ul>
+
+          {/* Shelf pagination — deliberately compact (no hold-to-riffle)
+              so it doesn't compete with the main binder's controls. */}
+          <div className="mt-4 flex items-center justify-between">
+            <ShelfNavButton
+              dir="prev"
+              disabled={clampedPageIndex <= 0}
+              onClick={() =>
+                setShelfPageIndex((i) => Math.max(0, i - 1))
+              }
+            />
+            <ShelfNavButton
+              dir="next"
+              disabled={clampedPageIndex >= totalShelfPages - 1}
+              onClick={() =>
+                setShelfPageIndex((i) =>
+                  Math.min(totalShelfPages - 1, i + 1),
+                )
+              }
+            />
+          </div>
         </section>
       </div>
     </div>
+  );
+}
+
+/* Shelf-local nav button — lighter-weight sibling of the main
+ * binder's PageNavButton (no hold-to-riffle, no onPointerDown
+ * ceremony). The shelf is a secondary surface so the controls are
+ * intentionally quiet. */
+function ShelfNavButton({
+  dir,
+  disabled,
+  onClick,
+}: {
+  dir: "prev" | "next";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const label = dir === "prev" ? "◀ Prev" : "Next ▶";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={dir === "prev" ? "Previous shelf page" : "Next shelf page"}
+      className={
+        disabled
+          ? "pop-card px-3 py-1.5 font-display text-[11px] tracking-wider text-ink/30 cursor-not-allowed rounded-sm"
+          : "pop-block rounded-sm bg-paper-strong px-3 py-1.5 font-display text-[11px] tracking-wider text-ink select-none"
+      }
+    >
+      {label}
+    </button>
   );
 }
 
@@ -931,7 +1006,7 @@ function ShelfRailCard({
         ? "bg-pink"
         : "bg-paper-strong";
   return (
-    <li className="shrink-0">
+    <li className="min-w-0">
       <button
         type="button"
         onMouseEnter={() => onEnter(entry.id)}
@@ -943,12 +1018,12 @@ function ShelfRailCard({
         aria-label={`${entry.cardName}${
           entry.quantity > 1 ? ` × ${entry.quantity}` : ""
         }`}
-        /* Width matches the main dex grid slot at typical viewport
-           (~168px) so the shelf rail reads as "more of the same
-           cards, just in a horizontal row". The dashed frame mirrors
-           the main binder's missing-slot card-holder look exactly —
-           the shelf feels like a binder page with card sleeves. */
-        className={`relative w-[168px] aspect-[5/7] rounded-md text-left transition-shadow border-[2px] border-dashed border-ink/30 bg-paper/60 ${ring}`}
+        /* Grid slot — fills its column (3-col grid) and keeps the
+           5:7 card aspect so the slot width exactly matches the main
+           dex grid cards at equivalent widths. Dashed frame mirrors
+           the main binder's missing-slot card-holder look so the
+           shelf reads as a binder page with card sleeves. */
+        className={`relative w-full aspect-[5/7] rounded-md text-left transition-shadow border-[2px] border-dashed border-ink/30 bg-paper/60 ${ring}`}
       >
         <div className="relative h-full w-full flex items-center justify-center p-1">
           <CardImage
@@ -984,7 +1059,7 @@ function ShelfEmptyHolder() {
   return (
     <li
       aria-hidden
-      className="shrink-0 w-[168px] aspect-[5/7] rounded-md border-[2px] border-dashed border-ink/20 bg-paper/40"
+      className="w-full aspect-[5/7] rounded-md border-[2px] border-dashed border-ink/20 bg-paper/40"
     />
   );
 }
