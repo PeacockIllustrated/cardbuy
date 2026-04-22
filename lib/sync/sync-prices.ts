@@ -204,10 +204,45 @@ export async function runPriceSync(): Promise<SyncResult> {
           });
         }
 
-        if (priceRows.length > 0) {
+        // Dedupe within the batch before upserting. Supabase wraps the
+        // upsert into a single INSERT … ON CONFLICT statement, and Postgres
+        // refuses to update the same target row twice from one statement
+        // ("ON CONFLICT DO UPDATE command cannot affect row a second time").
+        // Duplicates arise when TCGCSV has multiple productIds under one
+        // card number in a group (staff prints, poster variants) — both
+        // resolve to the same `(card_id, source, variant)` key.
+        // We keep the row with the best signal: prefer non-null
+        // marketPrice, then highest marketPrice.
+        const betterPrice = (
+          a: Record<string, unknown>,
+          b: Record<string, unknown>,
+        ): Record<string, unknown> => {
+          const am = a.price_market as number | null;
+          const bm = b.price_market as number | null;
+          if (am == null && bm != null) return b;
+          if (bm == null && am != null) return a;
+          if (am != null && bm != null && bm > am) return b;
+          return a;
+        };
+        const dedupedPrices = new Map<string, Record<string, unknown>>();
+        for (const row of priceRows) {
+          const key = `${row.card_id}|${row.source}|${row.variant}`;
+          const prev = dedupedPrices.get(key);
+          dedupedPrices.set(key, prev ? betterPrice(prev, row) : row);
+        }
+        const dedupedHistory = new Map<string, Record<string, unknown>>();
+        for (const row of historyRows) {
+          const key = `${row.card_id}|${row.source}|${row.variant}|${row.snapshotted_on}`;
+          const prev = dedupedHistory.get(key);
+          dedupedHistory.set(key, prev ? betterPrice(prev, row) : row);
+        }
+        const priceRowsFinal = [...dedupedPrices.values()];
+        const historyRowsFinal = [...dedupedHistory.values()];
+
+        if (priceRowsFinal.length > 0) {
           const { error: priceErr } = await supabase
             .from("lewis_card_prices")
-            .upsert(priceRows, {
+            .upsert(priceRowsFinal, {
               onConflict: "card_id,source,variant",
             });
           if (priceErr) {
@@ -216,12 +251,12 @@ export async function runPriceSync(): Promise<SyncResult> {
               reason: `prices upsert: ${priceErr.message}`,
             });
           } else {
-            r.pricesUpserted = priceRows.length;
+            r.pricesUpserted = priceRowsFinal.length;
           }
 
           const { error: histErr } = await supabase
             .from("lewis_card_price_history")
-            .upsert(historyRows, {
+            .upsert(historyRowsFinal, {
               onConflict: "card_id,source,variant,snapshotted_on",
             });
           if (histErr) {
