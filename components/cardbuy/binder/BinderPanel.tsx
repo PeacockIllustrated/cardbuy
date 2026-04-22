@@ -149,6 +149,10 @@ export type BinderSlotPayload = {
    *  override on top of this. */
   onWishlist: boolean;
   wishlistTargetGbp: number | null;
+  /** Small image URL of the canonical dex-rep card. Used on missing
+   *  slots as a ghost silhouette so the user can see the shape of the
+   *  Pokémon they don't own yet. */
+  silhouetteImage: string | null;
 };
 
 type Props = {
@@ -797,22 +801,29 @@ function ShelfDetail({
           Locked · esc
         </span>
       ) : null}
-      <div className="flex items-start gap-3">
-        {entry.imageSmall ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+
+      <div className="flex flex-col sm:flex-row items-start gap-4">
+        {/* Full-size interactive card — same CardImage + tilt behaviour
+            as the main Pokédex info pane, so Energy / Trainer cards
+            feel every bit as "held" as the owned Pokémon do. */}
+        <div className="shrink-0 self-center sm:self-start">
+          <CardImage
             src={entry.imageSmall}
             alt={entry.cardName}
-            className="w-[88px] h-auto shrink-0 border-2 border-ink rounded-sm bg-paper pointer-events-none"
+            size="md"
+            rarity={entry.rarity ?? undefined}
+            interactive
+            hideBadge
           />
-        ) : null}
-        <div className="flex flex-col min-w-0 gap-1">
+        </div>
+
+        <div className="flex flex-col min-w-0 gap-1.5 flex-1">
           <span
             className={`inline-block self-start border-2 border-ink rounded-sm px-1.5 py-0.5 font-display text-[9px] tracking-[0.2em] uppercase ${supertypeTone}`}
           >
             {entry.supertype}
           </span>
-          <div className="font-display text-[16px] md:text-[18px] leading-tight tracking-tight text-ink break-words">
+          <div className="font-display text-[18px] md:text-[22px] leading-tight tracking-tight text-ink break-words">
             {entry.cardName}
           </div>
           <div className="text-[11px] text-muted">
@@ -821,7 +832,7 @@ function ShelfDetail({
           </div>
           {entry.subtypes.length > 0 ? (
             <div className="flex flex-wrap gap-1">
-              {entry.subtypes.slice(0, 3).map((st) => (
+              {entry.subtypes.slice(0, 4).map((st) => (
                 <span
                   key={st}
                   className="bg-paper-strong border-2 border-ink rounded-sm px-1.5 py-0.5 font-display text-[9px] tracking-wider"
@@ -831,27 +842,28 @@ function ShelfDetail({
               ))}
             </div>
           ) : null}
-        </div>
-      </div>
-      <div className="mt-3 pt-3 border-t-2 border-ink/15 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] text-secondary">
-        <div>
-          <span className="font-display text-[10px] tracking-wider text-muted">
-            Qty
-          </span>{" "}
-          <span className="font-display tabular-nums text-ink">
-            ×{entry.quantity}
-          </span>
-        </div>
-        {variant ? (
-          <div>
-            <span className="font-display text-[10px] tracking-wider text-muted">
-              Variant
-            </span>{" "}
-            <span className="font-display tracking-wider text-ink">
-              {variant}
-            </span>
+
+          <div className="mt-2 pt-2 border-t-2 border-ink/15 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] text-secondary">
+            <div>
+              <span className="font-display text-[10px] tracking-wider text-muted">
+                Qty
+              </span>{" "}
+              <span className="font-display tabular-nums text-ink">
+                ×{entry.quantity}
+              </span>
+            </div>
+            {variant ? (
+              <div>
+                <span className="font-display text-[10px] tracking-wider text-muted">
+                  Variant
+                </span>{" "}
+                <span className="font-display tracking-wider text-ink">
+                  {variant}
+                </span>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
@@ -1083,6 +1095,7 @@ function SlotDetails({
           wishlistCardId={slot.wishlistCardId}
           initialOnWishlist={slot.onWishlist}
           initialTargetGbp={slot.wishlistTargetGbp}
+          silhouetteImage={slot.silhouetteImage}
         />
       )}
     </div>
@@ -1366,6 +1379,7 @@ function MissingDetails({
   wishlistCardId,
   initialOnWishlist,
   initialTargetGbp,
+  silhouetteImage,
 }: {
   dexName: string;
   dexNumber: number;
@@ -1374,6 +1388,7 @@ function MissingDetails({
   wishlistCardId: string | null;
   initialOnWishlist: boolean;
   initialTargetGbp: number | null;
+  silhouetteImage: string | null;
 }) {
   // Optimistic local state — reverts on server error.
   const [onWishlist, setOnWishlist] = useState(initialOnWishlist);
@@ -1435,21 +1450,34 @@ function MissingDetails({
 
   return (
     <>
-      {/* Card-back placeholder — styled panel with dex number, no art */}
+      {/* Ghost card — real card art rendered through a desaturating
+          filter so the user can see the shape of the Pokémon they're
+          chasing. The interactive CardImage carries the same 3D tilt
+          as an owned card, so the "preview" feels alive rather than a
+          static placeholder. `#NNN / Missing` chip pinned in the
+          corner keeps the not-owned state unambiguous. */}
       <div className="mt-4 flex justify-center">
-        <div
-          className="relative w-[180px] h-[250px] rounded-md border-[3px] border-dashed border-ink/40 bg-paper flex flex-col items-center justify-center gap-1"
-          aria-hidden
-        >
-          <div className="font-display text-[44px] tabular-nums text-ink/25 leading-none">
+        <div className="relative">
+          <CardImage
+            src={silhouetteImage}
+            alt={`${dexName} (not owned)`}
+            size="md"
+            interactive
+            hideBadge
+            className="[filter:grayscale(1)_brightness(0.55)_contrast(0.85)] opacity-60"
+          />
+          <span
+            className="absolute -top-2 -right-2 z-[5] bg-paper-strong border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-[0.2em] rotate-[3deg] pointer-events-none"
+            aria-hidden
+          >
             #{String(dexNumber).padStart(3, "0")}
-          </div>
-          <div className="font-display text-[11px] tracking-[0.25em] text-ink/40 uppercase">
-            Not owned
-          </div>
-          <div className="absolute -top-2 -right-2 bg-paper-strong border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider">
-            Missing
-          </div>
+          </span>
+          <span
+            className="absolute -bottom-2 -left-2 z-[5] bg-ink text-paper-strong border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-[0.2em] -rotate-[3deg] pointer-events-none"
+            aria-hidden
+          >
+            MISSING
+          </span>
         </div>
       </div>
 

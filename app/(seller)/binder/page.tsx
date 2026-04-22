@@ -182,6 +182,14 @@ export default async function BinderPage({
       ? wishlistByCardId.get(wishlistCardId)
       : undefined;
 
+    // Canonical silhouette image — the small artwork of the
+    // dex-registry's sample card. Missing slots render this behind
+    // a ghost filter so the user can see the shape of what they're
+    // chasing.
+    const silhouetteImage = dex.sampleCardId
+      ? (getCardById(dex.sampleCardId)?.images.small ?? null)
+      : null;
+
     const base = {
       dexNumber: dex.number,
       dexName: dex.name,
@@ -195,6 +203,7 @@ export default async function BinderPage({
         wishlistEntry.target_price_gbp !== null
           ? Number(wishlistEntry.target_price_gbp)
           : null,
+      silhouetteImage,
     };
 
     if (entries.length === 0) {
