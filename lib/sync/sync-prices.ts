@@ -167,11 +167,35 @@ export async function runPriceSync(): Promise<SyncResult> {
         }
         const cardRows = [...cardRowsById.values()];
 
+        // Defensive pre-flight: if somehow dupes remain, surface them.
+        const cardIdsSeen = new Set<string>();
+        const cardDups: string[] = [];
+        for (const row of cardRows) {
+          const id = String(row.id);
+          if (cardIdsSeen.has(id)) cardDups.push(id);
+          cardIdsSeen.add(id);
+        }
+        if (cardDups.length > 0) {
+          console.error(
+            `[sync] ${group.link.name} cards dedupe LEAK: ${cardDups.join(",")}`,
+          );
+        }
+
         const { error: cardErr } = await supabase
           .from("lewis_cards")
           .upsert(cardRows, { onConflict: "id" });
         if (cardErr) {
-          r.errors.push({ group: group.link.name, reason: cardErr.message });
+          const detail = [
+            `cards[${cardRows.length}]`,
+            cardErr.code && `code=${cardErr.code}`,
+            cardErr.message,
+            cardErr.details && `details=${cardErr.details}`,
+            cardErr.hint && `hint=${cardErr.hint}`,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          console.error(`[sync] ${group.link.name} · ${detail}`);
+          r.errors.push({ group: group.link.name, reason: detail });
           return r;
         }
         r.cardsUpserted = cardRows.length;
@@ -254,10 +278,17 @@ export async function runPriceSync(): Promise<SyncResult> {
               onConflict: "card_id,source,variant",
             });
           if (priceErr) {
-            r.errors.push({
-              group: group.link.name,
-              reason: `prices upsert: ${priceErr.message}`,
-            });
+            const detail = [
+              `prices[${priceRowsFinal.length}]`,
+              priceErr.code && `code=${priceErr.code}`,
+              priceErr.message,
+              priceErr.details && `details=${priceErr.details}`,
+              priceErr.hint && `hint=${priceErr.hint}`,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            console.error(`[sync] ${group.link.name} · ${detail}`);
+            r.errors.push({ group: group.link.name, reason: detail });
           } else {
             r.pricesUpserted = priceRowsFinal.length;
           }
@@ -268,10 +299,17 @@ export async function runPriceSync(): Promise<SyncResult> {
               onConflict: "card_id,source,variant,snapshotted_on",
             });
           if (histErr) {
-            r.errors.push({
-              group: group.link.name,
-              reason: `history upsert: ${histErr.message}`,
-            });
+            const detail = [
+              `history[${historyRowsFinal.length}]`,
+              histErr.code && `code=${histErr.code}`,
+              histErr.message,
+              histErr.details && `details=${histErr.details}`,
+              histErr.hint && `hint=${histErr.hint}`,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            console.error(`[sync] ${group.link.name} · ${detail}`);
+            r.errors.push({ group: group.link.name, reason: detail });
           }
         }
       } catch (e) {
