@@ -139,10 +139,17 @@ export async function runPriceSync(): Promise<SyncResult> {
 
         if (resolved.length === 0) return r;
 
-        // Upsert lewis_cards (catalogue cache)
-        const cardRows = resolved.map((rp) => {
+        // Upsert lewis_cards (catalogue cache). Dedupe by id before
+        // upserting — TCGCSV can have multiple productIds under one
+        // pokemontcg.io card (staff prints, Cosmos Holo promo variants
+        // numbered into the main set, etc.) which would otherwise
+        // produce duplicate id rows and trip Postgres's "ON CONFLICT
+        // DO UPDATE command cannot affect row a second time".
+        const cardRowsById = new Map<string, Record<string, unknown>>();
+        for (const rp of resolved) {
+          if (cardRowsById.has(rp.cardId)) continue; // first product wins
           const c = getCardById(rp.cardId);
-          return {
+          cardRowsById.set(rp.cardId, {
             id: rp.cardId,
             name: c?.name ?? rp.name,
             set_id: setIdOf(c!),
@@ -156,8 +163,9 @@ export async function runPriceSync(): Promise<SyncResult> {
             tcgplayer_product_id: rp.tcgPid,
             tcgplayer_group_id: rp.tcgGid,
             last_synced_at: new Date().toISOString(),
-          };
-        });
+          });
+        }
+        const cardRows = [...cardRowsById.values()];
 
         const { error: cardErr } = await supabase
           .from("lewis_cards")
