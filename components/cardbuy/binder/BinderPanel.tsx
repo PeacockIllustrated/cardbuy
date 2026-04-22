@@ -797,6 +797,14 @@ function BottomShelfPanel({
                 onClick={onClick}
               />
             ))}
+            {/* Trailing empty card-holder slots — dashed frames that
+                make the shelf read as "a binder page with room for
+                more" rather than just a row of whatever happens to
+                be owned. Rendered unconditionally so the shelf always
+                has a destination for new adds. */}
+            {[0, 1, 2].map((i) => (
+              <ShelfEmptyHolder key={`empty-${i}`} />
+            ))}
           </ul>
         </section>
       </div>
@@ -935,17 +943,13 @@ function ShelfRailCard({
         aria-label={`${entry.cardName}${
           entry.quantity > 1 ? ` × ${entry.quantity}` : ""
         }`}
-        /* Size matches the main dex grid slot exactly — same
-           aspect-[5/7], same CardImage size="sm" inside. Inset well
-           + padding mirror the owned-slot visual so a row of shelf
-           cards visually reads as "same kind of thing" as the grid. */
-        className={`relative w-[120px] aspect-[5/7] rounded-md text-left transition-shadow ${ring}`}
+        /* Width matches the main dex grid slot at typical viewport
+           (~168px) so the shelf rail reads as "more of the same
+           cards, just in a horizontal row". The dashed frame mirrors
+           the main binder's missing-slot card-holder look exactly —
+           the shelf feels like a binder page with card sleeves. */
+        className={`relative w-[168px] aspect-[5/7] rounded-md text-left transition-shadow border-[2px] border-dashed border-ink/30 bg-paper/60 ${ring}`}
       >
-        <div
-          aria-hidden
-          className="absolute inset-0 rounded-md bg-paper/40"
-          style={{ boxShadow: "inset 0 0 0 2px rgba(10,10,10,0.1)" }}
-        />
         <div className="relative h-full w-full flex items-center justify-center p-1">
           <CardImage
             src={entry.imageSmall}
@@ -971,6 +975,17 @@ function ShelfRailCard({
         ) : null}
       </button>
     </li>
+  );
+}
+
+/* Empty card-holder slot in the shelf rail — same dashed frame as
+ * the main binder's missing dex slots. Purely visual, not clickable. */
+function ShelfEmptyHolder() {
+  return (
+    <li
+      aria-hidden
+      className="shrink-0 w-[168px] aspect-[5/7] rounded-md border-[2px] border-dashed border-ink/20 bg-paper/40"
+    />
   );
 }
 
@@ -2013,10 +2028,12 @@ function MissingSlotVisual({
         {name}
       </div>
       {/* Wishlist heart — pink to differentiate from the gold Grail
-          star on owned slots. Signals "chasing this one" at a glance. */}
+          star on owned slots. Positioned INSIDE the slot bounds so it
+          can't overlap the +N multi-copy chip on the slot above in
+          the grid. */}
       {wishlisted ? (
         <span
-          className="absolute -top-1.5 -right-1.5 z-[4] w-6 h-6 grid place-items-center rounded-full bg-pink border-2 border-ink font-display text-[11px] leading-none rotate-[8deg] pointer-events-none"
+          className="absolute top-1 right-1 z-[4] w-5 h-5 grid place-items-center rounded-full bg-pink border-2 border-ink font-display text-[10px] leading-none rotate-[8deg] pointer-events-none"
           aria-label="On wishlist"
         >
           ♥
