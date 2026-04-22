@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { Button, Input, Select, Field } from "@/components/ui/Form";
 import { CardImage } from "@/components/cardbuy/CardImage";
 import { EnergyChip } from "@/components/cardbuy/EnergyChip";
@@ -307,7 +306,6 @@ export default async function SearchPage({
                   NEXT →
                 </Link>
               </div>
-              <TodoMarker phase={2}>server-side pagination</TodoMarker>
             </div>
           ) : null}
         </section>

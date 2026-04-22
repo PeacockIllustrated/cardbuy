@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { Button, Input, Select } from "@/components/ui/Form";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
 import type { ListingStatus, MockListing } from "@/lib/mock/types";
@@ -100,7 +99,6 @@ export function InventoryEditor({ initial, featuredSlotCount }: Props) {
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <TodoMarker phase={2}>add new listing form</TodoMarker>
           <Button size="sm" disabled>+ Add listing</Button>
         </div>
       </div>

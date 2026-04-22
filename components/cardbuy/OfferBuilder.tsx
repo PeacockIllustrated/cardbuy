@@ -11,7 +11,6 @@ import type {
 } from "@/lib/mock/types";
 import { computeMockOffer, formatGBP } from "@/lib/mock/mock-offer";
 import { Button, Field, Select } from "@/components/ui/Form";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { addSubmissionItem } from "@/app/_actions/submission";
 
 const CONDITIONS: Condition[] = ["NM", "LP", "MP", "HP", "DMG"];
@@ -248,7 +247,6 @@ export function OfferBuilder({
             ? "low confidence — manual review"
             : "high confidence"}
         </div>
-        <TodoMarker phase={3}>real pricing engine</TodoMarker>
       </div>
 
       {error ? (

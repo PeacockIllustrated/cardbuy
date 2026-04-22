@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Annotation } from "@/components/wireframe/Annotation";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
 import { CardImage } from "@/components/cardbuy/CardImage";
 import { MOCK_MARGIN_CONFIG } from "@/lib/mock/mock-margin-config";
@@ -292,8 +291,6 @@ export default async function AdminCardsPage({
           </Link>
         </div>
       </div>
-
-      <TodoMarker phase={2}>Supabase live data + per-set price refresh</TodoMarker>
     </div>
   );
 }

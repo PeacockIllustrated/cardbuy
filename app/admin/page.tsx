@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Annotation } from "@/components/wireframe/Annotation";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
 import {
   getAdminSubmissionStats,
@@ -93,7 +92,7 @@ export default async function AdminDashboardPage() {
           Today at cardbuy
         </h1>
         <p className="text-secondary text-[13px]">
-          Two sides of the business in one view. Buy on the left (live), sell on the right (mock until Phase 2b).
+          Two sides of the business in one view.
         </p>
       </header>
 
@@ -220,12 +219,11 @@ export default async function AdminDashboardPage() {
             );
           })}
         </div>
-        <TodoMarker phase={2}>drag-to-reorder featured priority</TodoMarker>
       </section>
 
-      {/* Combined activity feed — real submissions + mock orders */}
+      {/* Combined activity feed */}
       <section className="flex flex-col gap-2">
-        <Annotation>RECENT ACTIVITY · real submissions + mock orders</Annotation>
+        <Annotation>RECENT ACTIVITY</Annotation>
         <Table>
           <THead>
             <TR>
@@ -282,10 +280,6 @@ export default async function AdminDashboardPage() {
           </TBody>
         </Table>
       </section>
-
-      <TodoMarker phase={2}>
-        Phase 2b swaps orders + listings + pricing to Supabase
-      </TodoMarker>
     </div>
   );
 }

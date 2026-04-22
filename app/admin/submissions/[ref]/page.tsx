@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Annotation } from "@/components/wireframe/Annotation";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import {
   SubmissionReview,
   type ConditionOfferMap,
@@ -184,7 +183,6 @@ export default async function AdminSubmissionDetailPage({
               </dd>
             </div>
           </dl>
-          <TodoMarker phase={4}>tracking number, parcel-arrival webhook</TodoMarker>
         </aside>
 
         {/* Cards + verification + summary */}
@@ -193,12 +191,6 @@ export default async function AdminSubmissionDetailPage({
             submission={adaptedSubmission}
             offerByCondition={offerByCondition}
           />
-          <p className="text-[11px] text-muted font-display tracking-wider">
-            Live data · <code className="font-mono">lewis_submissions</code> +
-            <code className="font-mono ml-1">lewis_submission_items</code>.
-            Verification UI is still local-state —{" "}
-            <TodoMarker phase={4}>persist revised offers</TodoMarker>.
-          </p>
         </div>
       </div>
     </div>

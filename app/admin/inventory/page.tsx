@@ -1,5 +1,4 @@
 import { Annotation } from "@/components/wireframe/Annotation";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import {
   MOCK_LISTINGS,
   FEATURED_SLOT_COUNT,
@@ -25,10 +24,6 @@ export default function AdminInventoryPage() {
         initial={MOCK_LISTINGS}
         featuredSlotCount={FEATURED_SLOT_COUNT}
       />
-
-      <TodoMarker phase={2}>
-        persist edits to Supabase; auto-set sold_out when qty hits 0
-      </TodoMarker>
     </div>
   );
 }

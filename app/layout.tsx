@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo_Black, Inter } from "next/font/google";
 import "./globals.css";
-import { WireframeStamp } from "@/components/wireframe/WireframeStamp";
 import { PageFooter } from "@/components/wireframe/PageFooter";
 
 const archivoBlack = Archivo_Black({
@@ -20,7 +19,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "cardbuy · buy & sell Pokémon cards",
-  description: "Pre-launch wireframe — visual identity in progress.",
+  description:
+    "Buy graded and raw Pokémon cards from a UK dealer, or sell yours for an instant GBP offer.",
 };
 
 export default function RootLayout({
@@ -32,7 +32,6 @@ export default function RootLayout({
       className={`${archivoBlack.variable} ${inter.variable} h-full`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink font-sans text-[15px] leading-[1.55]">
-        <WireframeStamp />
         <main className="flex-1">{children}</main>
         <PageFooter />
       </body>

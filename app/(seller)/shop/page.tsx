@@ -1,4 +1,3 @@
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { Button, Field, Input, Select } from "@/components/ui/Form";
 import { ListingCard } from "@/components/cardbuy/ListingCard";
 import { listListings } from "@/app/_actions/shop";
@@ -84,8 +83,7 @@ export default async function ShopPage({
         </h1>
         <p className="text-secondary text-[14px] max-w-[60ch]">
           Hand-picked Pokémon cards — raw and graded. Free Royal Mail
-          Tracked over £250. UK dispatch within one working day.{" "}
-          <TodoMarker phase={4}>real Stripe checkout</TodoMarker>
+          Tracked over £250. UK dispatch within one working day.
         </p>
       </header>
 

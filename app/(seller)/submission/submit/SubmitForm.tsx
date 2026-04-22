@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { Annotation } from "@/components/wireframe/Annotation";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { Button, Input, Select, Field } from "@/components/ui/Form";
 import { submitSubmission } from "@/app/_actions/submission";
 import type { LewisUser, PayoutMethod } from "@/lib/supabase/types";
@@ -122,12 +121,7 @@ export function SubmitForm({ profile, defaultEmail }: Props) {
         {payout === "paypal" ? (
           <Field
             label="PayPal email"
-            hint={
-              <span>
-                Goes to the address in your PayPal Receive settings.{" "}
-                <TodoMarker phase={4}>real PayPal Payouts</TodoMarker>
-              </span>
-            }
+            hint="Goes to the address in your PayPal Receive settings."
           >
             <Input
               name="paypal_email"
@@ -138,8 +132,7 @@ export function SubmitForm({ profile, defaultEmail }: Props) {
           </Field>
         ) : (
           <p className="text-[11px] text-muted">
-            Store credit boosts every line by 20%.{" "}
-            <TodoMarker phase={2}>credit ledger</TodoMarker>
+            Store credit boosts every line by 20%.
           </p>
         )}
       </section>
@@ -161,9 +154,6 @@ export function SubmitForm({ profile, defaultEmail }: Props) {
             Send yourself (your own postage / courier)
           </label>
         </div>
-        <span className="text-[11px] text-muted">
-          <TodoMarker phase={4}>actual Royal Mail label generation</TodoMarker>
-        </span>
       </section>
 
       <section className="flex flex-col gap-2">

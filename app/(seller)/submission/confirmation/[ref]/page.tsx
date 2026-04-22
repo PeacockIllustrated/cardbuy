@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Annotation } from "@/components/wireframe/Annotation";
-import { TodoMarker } from "@/components/wireframe/TodoMarker";
 import { getSubmissionByReference } from "@/app/_actions/submission";
 import { formatGBP } from "@/lib/mock/mock-offer";
 
@@ -53,7 +52,6 @@ export default async function ConfirmationPage({
           <br />
           United Kingdom
         </address>
-        <TodoMarker phase={2}>real shipping address from admin config</TodoMarker>
       </section>
 
       <section className="flex flex-col gap-3">
@@ -76,8 +74,7 @@ export default async function ConfirmationPage({
           {statusLabel(submission.status)}
         </div>
         <div className="text-[12px] text-muted">
-          We&apos;ll email you when the parcel is received.{" "}
-          <TodoMarker phase={4}>transactional email</TodoMarker>
+          We&apos;ll email you when the parcel is received.
         </div>
       </section>
 
