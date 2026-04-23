@@ -216,9 +216,29 @@ export function ListingCard({
             hideBadge
             onEngagedChange={setTilted}
           />
+          {/*
+           * Stamp stack. `Sold out` and `New in` compete for the same
+           * top-right anchor (sold out wins). `Low stock` and grade/
+           * condition badges occupy distinct corners so they can
+           * co-occur without overlap.
+           */}
           {soldOut ? (
             <span className="absolute -top-2 -right-2 z-[5] bg-warn text-paper-strong border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider rotate-[3deg] pointer-events-none">
               Sold out
+            </span>
+          ) : listing.is_new_in ? (
+            <span className="absolute -top-2 -right-2 z-[5] bg-pink text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider -rotate-[4deg] pointer-events-none shadow-[2px_2px_0_0_var(--color-ink)]">
+              New in
+            </span>
+          ) : null}
+          {!soldOut && inStock > 0 && inStock <= 2 ? (
+            <span className="absolute -bottom-1 -right-2 z-[5] bg-warn text-paper-strong border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider rotate-[5deg] pointer-events-none shadow-[2px_2px_0_0_var(--color-ink)]">
+              {inStock === 1 ? "1 left" : `${inStock} left`}
+            </span>
+          ) : null}
+          {listing.variant === "graded" ? (
+            <span className="absolute -top-2 -left-2 z-[5] bg-teal text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider -rotate-[6deg] pointer-events-none shadow-[2px_2px_0_0_var(--color-ink)] tabular-nums">
+              {listing.grading_company} {listing.grade}
             </span>
           ) : null}
         </div>
@@ -240,8 +260,18 @@ export function ListingCard({
         </div>
         <div className="text-[11px] text-secondary">{variantLabel}</div>
         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 mt-2 pt-2 border-t-2 border-ink/15">
-          <span className="font-display text-[18px] leading-none tracking-tight tabular-nums">
-            {formatGBP(listing.price_gbp)}
+          <span className="flex items-baseline gap-1.5">
+            <span className="font-display text-[18px] leading-none tracking-tight tabular-nums">
+              {formatGBP(listing.price_gbp)}
+            </span>
+            {listing.market_price_gbp ? (
+              <span
+                className="text-[11px] text-muted line-through tabular-nums"
+                aria-label={`Market price ${formatGBP(listing.market_price_gbp)}`}
+              >
+                {formatGBP(listing.market_price_gbp)}
+              </span>
+            ) : null}
           </span>
           <span className="text-[11px] text-muted tabular-nums whitespace-nowrap">
             {inStock > 0 ? `${inStock} in stock` : "—"}

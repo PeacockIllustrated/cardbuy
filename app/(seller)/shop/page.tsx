@@ -1,5 +1,6 @@
 import { Button, Field, Input, Select } from "@/components/ui/Form";
 import { ListingCard } from "@/components/cardbuy/ListingCard";
+import { FeaturedRail } from "@/components/cardbuy/shop/FeaturedRail";
 import { listListings } from "@/app/_actions/shop";
 import { adaptListing } from "@/lib/shop/adapter";
 import type { MockListing } from "@/lib/mock/types";
@@ -68,7 +69,7 @@ export default async function ShopPage({
     .sort(
       (a, b) => (a.featured_priority ?? 99) - (b.featured_priority ?? 99),
     )
-    .slice(0, 4);
+    .slice(0, 10);
 
   const results = applyFilters(listings, sp);
 
@@ -87,23 +88,7 @@ export default async function ShopPage({
         </p>
       </header>
 
-      {featured.length > 0 ? (
-        <section className="bg-yellow border-[3px] border-ink rounded-lg p-5 flex flex-col gap-4">
-          <h2 className="font-display text-[20px] tracking-tight leading-none">
-            Featured · curated by Lewis
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {featured.map((l, i) => (
-              <ListingCard
-                key={l.id}
-                listing={l}
-                compact
-                accent={(["pink", "teal", "pink", "teal"] as const)[i % 4]}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {featured.length > 0 ? <FeaturedRail featured={featured} /> : null}
 
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
         <aside className="pop-card rounded-md h-fit overflow-hidden">

@@ -113,6 +113,16 @@ export type MockListing = {
   featured_priority: number | null;
   condition_notes: string | null;
   created_at: string; // ISO
+  /** Denormalised view field — decorative "market reference" price to
+   *  show alongside `price_gbp` as a strike-through. Computed at read
+   *  time in the shop adapter (deterministic per-listing markup over
+   *  the listed price); never persisted. Undefined when the markup is
+   *  not meaningful (< £1 above the list price). */
+  market_price_gbp?: number;
+  /** Denormalised view field — true when `created_at` is within the
+   *  last 14 days. Computed at read time in the shop adapter so the
+   *  client component doesn't need "now()" during hydration. */
+  is_new_in?: boolean;
 };
 
 export type OrderStatus =
