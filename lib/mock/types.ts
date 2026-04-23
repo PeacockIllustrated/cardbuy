@@ -123,6 +123,18 @@ export type MockListing = {
    *  last 14 days. Computed at read time in the shop adapter so the
    *  client component doesn't need "now()" during hydration. */
   is_new_in?: boolean;
+  /** Denormalised view field — the card's primary Pokémon energy type,
+   *  used to pick a per-element particle recipe on hover. Null for
+   *  Trainer / Energy cards, or when the catalogue has no type. */
+  elemental_type?:
+    | "Fire"
+    | "Water"
+    | "Grass"
+    | "Lightning"
+    | "Psychic"
+    | "Fighting"
+    | "Colorless"
+    | null;
 };
 
 export type OrderStatus =

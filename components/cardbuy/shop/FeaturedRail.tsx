@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { MockListing } from "@/lib/mock/types";
 import { ListingCard } from "@/components/cardbuy/ListingCard";
 
@@ -48,75 +48,73 @@ const BURST_SM = buildBurst(8, 98, 48, 58);
  * - Desktop: cursor position within the rail drives the scroll speed.
  *   Sitting in the outer 20% of the rail width on either side ramps
  *   the scroll — at the inner boundary the speed is zero, at the
- *   outer edge it's `MAX_PX_PER_FRAME`. Between, linear. The cursor
- *   flips to `w-resize` / `e-resize` when in a scroll zone so the
- *   user has feedback that their position is driving motion.
- *
- * Silhouette:
- * - Two starburst SVGs break out behind the frame (top-left pink,
- *   bottom-right teal) so the yellow stage doesn't read as a plain
- *   rectangle.
- * - A chunky "LEWIS'S PICKS" sticker sits astride the top edge,
- *   rotated and ink-shadowed for the sticker-over-poster vibe.
+ *   outer edge it's `MAX_PX_PER_FRAME`. Between, linear. We attach
+ *   the pointer listener as a native DOM event (not React synthetic)
+ *   so it fires reliably over nested link/card children; the surface
+ *   carries a `data-scroll` attribute that a CSS rule uses to force
+ *   the right resize cursor through the UA link cursor.
  */
 export function FeaturedRail({ featured }: { featured: MockListing[] }) {
   const railRef = useRef<HTMLDivElement | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
-  const rafRef = useRef<number | null>(null);
   const speedRef = useRef(0);
 
-  const step = useCallback(() => {
-    const el = railRef.current;
-    if (!el || speedRef.current === 0) {
-      rafRef.current = null;
-      return;
-    }
-    el.scrollLeft += speedRef.current;
-    rafRef.current = requestAnimationFrame(step);
+  // Persistent rAF loop — always running while mounted, drives the
+  // rail's scrollLeft from whatever speed the mousemove handler has
+  // stashed. No bookkeeping of "is a frame scheduled", which made an
+  // earlier conditional-schedule version susceptible to getting stuck
+  // with a stale rafRef.current != null never clearing.
+  useEffect(() => {
+    let rafId = 0;
+    const loop = () => {
+      const el = railRef.current;
+      const speed = speedRef.current;
+      if (el && speed !== 0) {
+        el.scrollLeft += speed;
+      }
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const handleMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const surface = surfaceRef.current;
-      if (!surface) return;
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+
+    const handleMove = (e: MouseEvent) => {
       const rect = surface.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width; // 0..1
+      if (rect.width === 0) return;
+      const x = (e.clientX - rect.left) / rect.width;
 
       let speed = 0;
-      let cursor = "";
-      if (x < EDGE_ZONE_FRACTION) {
-        // Depth into the left zone: 1 at the outer edge, 0 at the
-        // inner boundary of the zone.
+      let mode = "";
+      if (x >= 0 && x < EDGE_ZONE_FRACTION) {
         const depth = 1 - x / EDGE_ZONE_FRACTION;
         speed = -depth * MAX_PX_PER_FRAME;
-        cursor = "w-resize";
-      } else if (x > 1 - EDGE_ZONE_FRACTION) {
+        mode = "left";
+      } else if (x <= 1 && x > 1 - EDGE_ZONE_FRACTION) {
         const depth = (x - (1 - EDGE_ZONE_FRACTION)) / EDGE_ZONE_FRACTION;
         speed = depth * MAX_PX_PER_FRAME;
-        cursor = "e-resize";
+        mode = "right";
       }
 
       speedRef.current = speed;
-      surface.style.cursor = cursor;
+      if (surface.dataset.scroll !== mode) surface.dataset.scroll = mode;
+    };
 
-      if (speed !== 0 && rafRef.current == null) {
-        rafRef.current = requestAnimationFrame(step);
-      }
-    },
-    [step],
-  );
+    const handleLeave = () => {
+      speedRef.current = 0;
+      surface.dataset.scroll = "";
+    };
 
-  const handleLeave = useCallback(() => {
-    speedRef.current = 0;
-    if (surfaceRef.current) surfaceRef.current.style.cursor = "";
+    surface.addEventListener("mousemove", handleMove);
+    surface.addEventListener("mouseleave", handleLeave);
+    return () => {
+      surface.removeEventListener("mousemove", handleMove);
+      surface.removeEventListener("mouseleave", handleLeave);
+    };
   }, []);
-
-  useEffect(
-    () => () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    },
-    [],
-  );
 
   if (featured.length === 0) return null;
 
@@ -131,7 +129,7 @@ export function FeaturedRail({ featured }: { featured: MockListing[] }) {
       <svg
         viewBox="0 0 200 200"
         aria-hidden="true"
-        className="absolute -top-10 -left-14 md:-left-16 w-[170px] md:w-[190px] h-[170px] md:h-[190px] rotate-[-12deg] pointer-events-none z-0"
+        className="absolute -top-16 -left-20 md:-left-24 w-[220px] md:w-[260px] h-[220px] md:h-[260px] rotate-[-12deg] pointer-events-none z-0"
       >
         <polygon
           points={BURST_LG}
@@ -148,7 +146,7 @@ export function FeaturedRail({ featured }: { featured: MockListing[] }) {
       <svg
         viewBox="0 0 200 200"
         aria-hidden="true"
-        className="absolute -bottom-10 -right-10 md:-right-12 w-[140px] md:w-[160px] h-[140px] md:h-[160px] rotate-[22deg] pointer-events-none z-0 hidden sm:block"
+        className="absolute -bottom-14 -right-14 md:-right-16 w-[180px] md:w-[210px] h-[180px] md:h-[210px] rotate-[22deg] pointer-events-none z-0 hidden sm:block"
       >
         <polygon
           points={BURST_SM}
@@ -173,28 +171,33 @@ export function FeaturedRail({ featured }: { featured: MockListing[] }) {
 
       {/* The yellow stage. overflow-visible so the sticker badge and
        *  drop shadow aren't clipped. Horizontal overflow is handled by
-       *  the inner rail div below. */}
-      <div className="relative z-10 bg-yellow border-[3px] border-ink rounded-lg shadow-[8px_8px_0_0_var(--color-ink)] pt-8 pb-5">
-        <div
-          ref={surfaceRef}
-          className="relative"
-          onMouseMove={handleMove}
-          onMouseLeave={handleLeave}
-        >
+       *  the inner rail div below. `pt-0` pushes the rail's clip box
+       *  flush with the yellow frame's interior top edge — so the
+       *  particle field (which extends -48px above each card) is
+       *  allowed to paint all the way up to that edge before clipping. */}
+      <div className="relative z-10 bg-yellow border-[3px] border-ink rounded-lg shadow-[8px_8px_0_0_var(--color-ink)] pt-0 pb-3">
+        <div ref={surfaceRef} className="relative featured-rail-surface">
           <div
             ref={railRef}
-            className="overflow-x-auto snap-x snap-mandatory scrollbar-none"
+            className="overflow-x-auto scrollbar-none"
           >
-            <ul className="flex gap-4 md:gap-5 px-5 md:px-10 w-max">
+            {/* Vertical padding inside the scroll container. The
+             *  `overflow-x-auto` axis also clips Y (a CSS gotcha: any
+             *  non-visible overflow forces the other axis to clip), so
+             *  we keep the card pushed ~48px from the rail's top edge
+             *  to give the particle field (which extends -12/-top-12
+             *  → 48px above the tile) exactly enough room to bleed. */}
+            <ul className="flex gap-4 md:gap-5 pr-6 md:pr-10 pt-12 pb-6 w-max">
               {featured.map((l, i) => (
                 <li
                   key={l.id}
-                  className="snap-start shrink-0 w-[210px] md:w-[240px]"
+                  className="shrink-0 w-[210px] md:w-[240px] first:ml-3 md:first:ml-5"
                 >
                   <ListingCard
                     listing={l}
                     compact
                     accent={ACCENT_CYCLE[i % ACCENT_CYCLE.length]}
+                    elementalType={l.elemental_type ?? null}
                   />
                 </li>
               ))}

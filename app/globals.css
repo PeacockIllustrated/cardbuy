@@ -710,6 +710,19 @@ input[type="number"] {
   display: none;
 }
 
+/* Featured-rail edge-hover scroll affordance. The rail surface sets
+ * data-scroll="left|right" when the cursor enters the outer 20% edge
+ * zone; the descendant selectors with !important force the resize
+ * cursor through the UA link-pointer cursor on nested card tiles. */
+.featured-rail-surface[data-scroll="left"],
+.featured-rail-surface[data-scroll="left"] * {
+  cursor: w-resize !important;
+}
+.featured-rail-surface[data-scroll="right"],
+.featured-rail-surface[data-scroll="right"] * {
+  cursor: e-resize !important;
+}
+
 /* ----------------------------------------------------------------
  * Binder page flip — a 3D rotateY around the spine axis, giving the
  * right page of a 3-ring binder a tactile turn. Used by the Pokédex

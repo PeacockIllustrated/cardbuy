@@ -92,7 +92,14 @@ export default async function ShopPage({
 
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
         <aside className="pop-card rounded-md h-fit overflow-hidden">
-          <details className="md:contents">
+          {/* `open` ensures the form is visible on desktop where
+           *  `md:contents` flattens the <details> box out of the grid
+           *  (native <details> hides non-summary children when closed,
+           *  and display:contents on the details element doesn't
+           *  override that). Mobile users can still collapse via the
+           *  summary tap; desktop users never see the summary thanks
+           *  to md:hidden. */}
+          <details open className="md:contents">
             <summary className="md:hidden cursor-pointer list-none px-4 py-3 flex items-center justify-between border-b-2 border-ink font-display text-[14px] tracking-wider hover:bg-yellow/30">
               <span>Filters</span>
               <span className="text-[11px] text-muted">tap to toggle</span>

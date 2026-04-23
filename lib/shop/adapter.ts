@@ -1,5 +1,6 @@
 import "server-only";
 import { getCardById } from "@/lib/fixtures/cards";
+import { resolveElementalType } from "@/components/cardbuy/particles/recipes";
 import type { LewisListing } from "@/lib/supabase/types";
 import type { MockListing } from "@/lib/mock/types";
 
@@ -60,6 +61,7 @@ export function adaptListing(l: LewisListing): MockListing {
     created_at: l.created_at,
     market_price_gbp: marketMeaningful ? marketRounded : undefined,
     is_new_in: ageMs >= 0 && ageMs < NEW_IN_WINDOW_MS,
+    elemental_type: resolveElementalType(card?.types?.[0]),
   };
 }
 
