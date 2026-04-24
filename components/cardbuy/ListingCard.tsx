@@ -123,6 +123,7 @@ const BURST_PALETTE: Record<
  */
 export function ListingCard({
   listing,
+  compact = false,
   accent = "yellow",
   elementalType,
 }: Props) {
@@ -161,7 +162,9 @@ export function ListingCard({
        * it leaves — see the particle container's negative insets.
        */}
       <div
-        className="relative flex justify-end flex-col items-center pt-6 pb-4 min-h-[310px] overflow-visible"
+        className={`relative flex justify-end flex-col items-center pt-6 pb-4 overflow-visible ${
+          compact ? "min-h-[310px]" : "min-h-[240px] md:min-h-[310px]"
+        }`}
         style={glowStyle}
       >
         {/*
@@ -206,7 +209,11 @@ export function ListingCard({
           <ParticleField type={elementalType} active={particlesActive} />
         </div>
 
-        <div className="relative z-[2]">
+        <div
+          className={`relative z-[2] ${
+            compact ? "" : "w-[148px] md:w-auto"
+          }`}
+        >
           <CardImage
             src={listing.image_url}
             alt={listing.card_name}
@@ -259,8 +266,14 @@ export function ListingCard({
           {listing.set_name} · {listing.rarity}
         </div>
         <div className="text-[11px] text-secondary">{variantLabel}</div>
-        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 mt-2 pt-2 border-t-2 border-ink/15">
-          <span className="flex items-baseline gap-1.5">
+        <div className="mt-2 pt-2 border-t-2 border-ink/15 flex flex-col gap-0.5 md:flex-row md:flex-wrap md:items-baseline md:justify-between md:gap-x-2 md:gap-y-0.5">
+          {/* Stock indicator sits ABOVE the price on mobile — the
+           *  narrower tile can't comfortably hold price + strike + stock
+           *  on one line, and wrapping pushes stock past the right edge. */}
+          <span className="text-[11px] text-muted tabular-nums md:order-2 whitespace-nowrap">
+            {inStock > 0 ? `${inStock} in stock` : "—"}
+          </span>
+          <span className="flex items-baseline gap-1.5 md:order-1">
             <span className="font-display text-[18px] leading-none tracking-tight tabular-nums">
               {formatGBP(listing.price_gbp)}
             </span>
@@ -272,9 +285,6 @@ export function ListingCard({
                 {formatGBP(listing.market_price_gbp)}
               </span>
             ) : null}
-          </span>
-          <span className="text-[11px] text-muted tabular-nums whitespace-nowrap">
-            {inStock > 0 ? `${inStock} in stock` : "—"}
           </span>
         </div>
       </div>
