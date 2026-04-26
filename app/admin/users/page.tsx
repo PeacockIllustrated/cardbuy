@@ -1,5 +1,6 @@
-import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { StatCard } from "@/components/admin/StatCard";
 import { listAdminUsers } from "@/app/_actions/admin";
 import { formatGBP } from "@/lib/mock/mock-offer";
 
@@ -23,25 +24,29 @@ export default async function AdminUsersPage() {
   const totalCommitted = users.reduce((s, u) => s + u.total_offered, 0);
 
   return (
-    <div className="px-4 py-6 max-w-[1300px] mx-auto flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <Annotation>ADMIN · USERS</Annotation>
-        <h1 className="font-display text-[26px] tracking-tight uppercase">
-          Users
-        </h1>
-        <p className="text-[12px] text-muted">
-          Read-only view of{" "}
-          <code className="font-mono">lewis_users</code> with submission
-          totals from <code className="font-mono">lewis_submissions</code>.
-          Role management lands in Phase 2b.
-        </p>
-      </header>
+    <div className="px-4 md:px-6 py-6 max-w-[1400px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "People" },
+          { label: "Users" },
+        ]}
+        title="Users"
+        kicker={{ label: "READ-ONLY", tone: "teal" }}
+        subtitle={
+          <>
+            Read-only view of <code className="font-mono">lewis_users</code> with submission
+            totals from <code className="font-mono">lewis_submissions</code>. Role management
+            lands in Phase 2b.
+          </>
+        }
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Users · total" value={users.length} />
-        <Stat label="Sellers" value={sellers.length} />
-        <Stat label="Admins" value={admins.length} />
-        <Stat label="£ lifetime committed" value={formatGBP(totalCommitted)} />
+        <StatCard label="Users · total" value={users.length} />
+        <StatCard label="Sellers" value={sellers.length} />
+        <StatCard label="Admins" value={admins.length} />
+        <StatCard label="£ lifetime committed" value={formatGBP(totalCommitted)} />
       </section>
 
       <Table>
@@ -116,15 +121,3 @@ export default async function AdminUsersPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="border-2 border-ink rounded-md p-3 bg-paper-strong">
-      <div className="text-[10px] font-display uppercase tracking-wider text-muted">
-        {label}
-      </div>
-      <div className="font-display text-[22px] leading-tight tracking-tight tabular-nums mt-1 text-ink">
-        {value}
-      </div>
-    </div>
-  );
-}

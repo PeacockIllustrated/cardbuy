@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { listHoldersOfCard } from "@/app/_actions/admin";
 import { searchCards } from "@/lib/fixtures/cards";
 
@@ -28,18 +29,17 @@ export default async function AdminSourcingPage({
   const query = sp.q ?? "";
 
   return (
-    <div className="px-4 py-6 max-w-[1100px] mx-auto flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <Annotation>ADMIN · SOURCING</Annotation>
-        <h1 className="font-display text-[26px] tracking-tight uppercase">
-          Who owns this card?
-        </h1>
-        <p className="text-[12px] text-secondary max-w-[58ch]">
-          Cards live in user binders — use this view when you have a buyer
-          and need to source. Reach out to holders with an enhanced
-          buyback offer.
-        </p>
-      </header>
+    <div className="px-4 md:px-6 py-6 max-w-[1200px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Sell side" },
+          { label: "Sourcing" },
+        ]}
+        title="Who owns this card?"
+        kicker={{ label: "CROSS-BINDER", tone: "pink" }}
+        subtitle="Cards live in user binders — use this view when you have a buyer and need to source. Reach out to holders with an enhanced buyback offer."
+      />
 
       <form
         action="/admin/sourcing"

@@ -1,5 +1,7 @@
 import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { StatCard } from "@/components/admin/StatCard";
 import {
   getRecentSyncRuns,
   getCardCoverageStats,
@@ -38,28 +40,30 @@ export default async function AdminSyncPage() {
       : 0;
 
   return (
-    <div className="px-4 py-6 max-w-[1200px] mx-auto flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <Annotation>ADMIN · CATALOGUE SYNC</Annotation>
-        <h1 className="font-display text-[26px] tracking-tight uppercase">
-          Sync
-        </h1>
-        <p className="text-[12px] text-muted">
-          Nightly TCGCSV → Supabase price ingest. Runs at 04:00 UTC via
-          Vercel Cron; you can trigger an immediate run below.
-        </p>
-      </header>
+    <div className="px-4 md:px-6 py-6 max-w-[1300px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Catalogue" },
+          { label: "Sync" },
+        ]}
+        title="Catalogue sync"
+        kicker={{ label: "CRON · 04:00 UTC", tone: "teal" }}
+        subtitle="Nightly TCGCSV → Supabase price ingest. Trigger an immediate run below if you need fresher data before a quote."
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Stat label="Cards in DB" value={coverage.totalCards.toLocaleString()} />
-        <Stat
+        <StatCard label="Cards in DB" value={coverage.totalCards.toLocaleString()} />
+        <StatCard
           label="With live prices"
-          value={`${coverage.withPrices.toLocaleString()} (${coveragePct}%)`}
+          value={`${coverage.withPrices.toLocaleString()}`}
+          sub={`${coveragePct}% coverage`}
         />
-        <Stat label="Last successful run" value={fmtDateTime(coverage.lastSyncAt)} />
-        <Stat
+        <StatCard label="Last successful run" value={fmtDateTime(coverage.lastSyncAt)} />
+        <StatCard
           label="Source"
-          value="TCGCSV / TCGplayer"
+          value="TCGCSV"
+          sub="TCGplayer market data"
         />
       </section>
 
@@ -153,15 +157,3 @@ export default async function AdminSyncPage() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="border-2 border-ink rounded-md p-3 bg-paper-strong">
-      <div className="text-[10px] font-display uppercase tracking-wider text-muted">
-        {label}
-      </div>
-      <div className="font-display text-[18px] leading-tight tracking-tight tabular-nums mt-1 text-ink">
-        {value}
-      </div>
-    </div>
-  );
-}

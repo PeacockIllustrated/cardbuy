@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Form";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { listAdminSubmissions } from "@/app/_actions/admin";
 import type { SubmissionStatus } from "@/lib/supabase/types";
 import { formatGBP } from "@/lib/mock/mock-offer";
@@ -58,14 +58,27 @@ export default async function AdminSubmissionsPage({
     active === "all" ? undefined : active,
   );
 
+  const totalCount = rows.length;
   return (
-    <div className="px-4 py-6 max-w-[1200px] mx-auto flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <Annotation>ADMIN · SUBMISSIONS QUEUE</Annotation>
-        <h1 className="font-display text-[26px] tracking-tight uppercase">
-          Submissions
-        </h1>
-      </header>
+    <div className="px-4 md:px-6 py-6 max-w-[1300px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Buy side" },
+          { label: "Submissions" },
+        ]}
+        title="Submissions"
+        kicker={{
+          label: active === "all" ? "ALL" : (STATUS_LABELS[active as SubmissionStatus] ?? String(active)).toUpperCase(),
+          tone: "yellow",
+        }}
+        subtitle="Incoming buylist packages — track status, quote, pay out."
+        actions={
+          <span className="font-display text-[11px] tracking-wider tabular-nums text-muted">
+            {totalCount} in view
+          </span>
+        }
+      />
 
       <nav className="flex flex-wrap gap-2">
         {TABS.map((t) => {

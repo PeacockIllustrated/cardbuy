@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
 import { CardImage } from "@/components/cardbuy/CardImage";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { MOCK_MARGIN_CONFIG } from "@/lib/mock/mock-margin-config";
 import { formatGBP } from "@/lib/mock/mock-offer";
 import { getMockCardById } from "@/lib/fixtures/mock-adapter";
@@ -66,29 +66,30 @@ export default async function AdminCardsPage({
   const avgConfidence = rows.length ? Math.round(totalConfidence / rows.length) : 0;
 
   return (
-    <div className="px-5 md:px-4 py-6 max-w-[1300px] mx-auto flex flex-col gap-6">
-      <header className="flex flex-col gap-3">
-        <Annotation>ADMIN · CARD CATALOGUE</Annotation>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h1 className="font-display text-[32px] md:text-[40px] leading-none tracking-tight">
-            Cards
-          </h1>
-          <div className="flex flex-wrap gap-2">
-            <span className="pop-card rounded-sm px-3 py-1.5 text-[11px] font-display tracking-wider">
+    <div className="px-4 md:px-6 py-6 max-w-[1400px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Catalogue" },
+          { label: "Cards" },
+        ]}
+        title="Card catalogue"
+        kicker={{ label: `SYNCED ${LAST_SYNCED}`, tone: "teal" }}
+        subtitle="The full Pokémon TCG catalogue with live market prices pulled from TCGCSV."
+        actions={
+          <>
+            <span className="pop-card rounded-sm px-2.5 py-1 text-[10px] font-display tracking-wider tabular-nums">
               {ALL.length.toLocaleString()} total
             </span>
-            <span className="pop-card rounded-sm px-3 py-1.5 text-[11px] font-display tracking-wider">
+            <span className="pop-card rounded-sm px-2.5 py-1 text-[10px] font-display tracking-wider tabular-nums">
               {rows.length.toLocaleString()} in view
             </span>
-            <span className="pop-card rounded-sm px-3 py-1.5 text-[11px] font-display tracking-wider">
-              AVG {avgConfidence} SALES / 30D
+            <span className="pop-card rounded-sm px-2.5 py-1 text-[10px] font-display tracking-wider tabular-nums">
+              AVG {avgConfidence} / 30D
             </span>
-            <span className="pop-card rounded-sm px-3 py-1.5 text-[11px] font-display tracking-wider bg-teal">
-              LAST SYNCED {LAST_SYNCED}
-            </span>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Filter row — compact, one line on desktop. Set + rarity are
           dropdowns (172 sets would dominate the page as chips). The

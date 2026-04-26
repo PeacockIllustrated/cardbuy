@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { StatCard } from "@/components/admin/StatCard";
 import { listAdminDemand } from "@/app/_actions/admin";
 import { formatGBP } from "@/lib/mock/mock-offer";
 
@@ -23,32 +24,27 @@ export default async function AdminDemandPage() {
   const actionable = rows.filter((r) => r.current_in_stock > 0).length;
 
   return (
-    <div className="px-4 py-6 max-w-[1200px] mx-auto flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <Annotation>ADMIN · DEMAND</Annotation>
-        <h1 className="font-display text-[26px] tracking-tight uppercase">
-          Wishlist Demand
-        </h1>
-        <p className="text-[12px] text-secondary max-w-[62ch]">
-          Every wishlist row across the user base, grouped by card. Use
-          this to prioritise sourcing, ping sellers, or spot which
-          in-stock cards have latent buyers.
-        </p>
-      </header>
+    <div className="px-4 md:px-6 py-6 max-w-[1300px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Sell side" },
+          { label: "Demand" },
+        ]}
+        title="Wishlist demand"
+        kicker={{ label: "AGGREGATE", tone: "pink" }}
+        subtitle="Every wishlist row across the user base, grouped by card. Prioritise sourcing, ping sellers, or spot in-stock cards with latent buyers."
+      />
 
-      {/* Topline stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatBlock label="Unique cards" value={uniqueCards.toString()} />
-        <StatBlock label="Total wishes" value={totalWishes.toString()} />
-        <StatBlock
-          label="In stock + wished"
-          value={actionable.toString()}
-          tone="teal"
-        />
-        <StatBlock
+        <StatCard label="Unique cards" value={uniqueCards} />
+        <StatCard label="Total wishes" value={totalWishes} />
+        <StatCard label="In stock + wished" value={actionable} tone="teal" />
+        <StatCard
           label="Missed demand"
-          value={(uniqueCards - actionable).toString()}
+          value={uniqueCards - actionable}
           tone="pink"
+          sub="No stock to meet"
         />
       </div>
 
@@ -169,33 +165,6 @@ function classifyDemand(row: {
   if (hasStock) return { label: "Surface", tone: "yellow" };
   if (hasTarget) return { label: "List it", tone: "pink" };
   return { label: "Watch", tone: "muted" };
-}
-
-function StatBlock({
-  label,
-  value,
-  tone = "paper",
-}: {
-  label: string;
-  value: string;
-  tone?: "paper" | "pink" | "teal";
-}) {
-  const bg =
-    tone === "pink"
-      ? "bg-pink"
-      : tone === "teal"
-        ? "bg-teal"
-        : "bg-paper-strong";
-  return (
-    <div className={`pop-card rounded-md p-3 ${bg}`}>
-      <div className="font-display text-[9px] tracking-[0.2em] text-ink/60 uppercase">
-        {label}
-      </div>
-      <div className="font-display text-[24px] leading-none tabular-nums text-ink mt-1">
-        {value}
-      </div>
-    </div>
-  );
 }
 
 function SignalBadge({

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { StatCard } from "@/components/admin/StatCard";
 import { listAdminOrders } from "@/app/_actions/admin-shop";
 import { formatGBP } from "@/lib/mock/mock-offer";
 import type { ShopOrderStatus } from "@/lib/supabase/types";
@@ -52,26 +53,40 @@ export default async function AdminOrdersPage({
   ).length;
 
   return (
-    <div className="px-4 py-6 max-w-[1300px] mx-auto flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <Annotation>ADMIN · ORDERS QUEUE</Annotation>
-        <h1 className="font-display text-[26px] tracking-tight uppercase">
-          Orders
-        </h1>
-      </header>
+    <div className="px-4 md:px-6 py-6 max-w-[1400px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Sell side" },
+          { label: "Orders" },
+        ]}
+        title="Orders"
+        kicker={{
+          label: active === "all" ? "ALL" : (STATUS_LABELS[active as ShopOrderStatus] ?? String(active)).toUpperCase(),
+          tone: "pink",
+        }}
+        subtitle="Every shopfront order — payment, pack, ship, done."
+        actions={
+          <span className="font-display text-[11px] tracking-wider tabular-nums text-muted">
+            {rows.length} in view
+          </span>
+        }
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatBlock label="Orders total" value={allRows.length.toString()} />
-        <StatBlock label="Revenue committed" value={formatGBP(revenue)} />
-        <StatBlock
+        <StatCard label="Orders total" value={allRows.length} />
+        <StatCard label="Revenue committed" value={formatGBP(revenue)} />
+        <StatCard
           label="Pending payment"
-          value={pendingPaymentCount.toString()}
+          value={pendingPaymentCount}
           tone={pendingPaymentCount > 0 ? "pink" : "paper"}
+          href={pendingPaymentCount > 0 ? "/admin/orders?status=pending_payment" : undefined}
         />
-        <StatBlock
+        <StatCard
           label="To pack"
-          value={toPackCount.toString()}
+          value={toPackCount}
           tone={toPackCount > 0 ? "teal" : "paper"}
+          href={toPackCount > 0 ? "/admin/orders?status=paid" : undefined}
         />
       </section>
 
@@ -172,33 +187,6 @@ export default async function AdminOrdersPage({
           </TBody>
         </Table>
       )}
-    </div>
-  );
-}
-
-function StatBlock({
-  label,
-  value,
-  tone = "paper",
-}: {
-  label: string;
-  value: string;
-  tone?: "paper" | "pink" | "teal";
-}) {
-  const bg =
-    tone === "pink"
-      ? "bg-pink"
-      : tone === "teal"
-        ? "bg-teal"
-        : "bg-paper-strong";
-  return (
-    <div className={`pop-card rounded-md p-3 ${bg}`}>
-      <div className="font-display text-[9px] tracking-[0.2em] text-ink/60 uppercase">
-        {label}
-      </div>
-      <div className="font-display text-[22px] leading-none tabular-nums text-ink mt-1">
-        {value}
-      </div>
     </div>
   );
 }

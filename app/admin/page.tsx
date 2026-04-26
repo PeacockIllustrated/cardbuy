@@ -1,18 +1,22 @@
 import Link from "next/link";
-import { Annotation } from "@/components/wireframe/Annotation";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { SectionCard } from "@/components/admin/SectionCard";
+import { StatCard } from "@/components/admin/StatCard";
 import {
   getAdminSubmissionStats,
   getAdminRecentActivity,
 } from "@/app/_actions/admin";
-import { MOCK_ORDERS, ORDER_STATUS_LABELS } from "@/lib/mock/mock-orders";
+import { listAdminOrders } from "@/app/_actions/admin-shop";
 import {
   MOCK_LISTINGS,
   FEATURED_SLOT_COUNT,
   getFeaturedListings,
 } from "@/lib/mock/mock-listings";
 import { formatGBP } from "@/lib/mock/mock-offer";
-import type { SubmissionStatus } from "@/lib/supabase/types";
+import type { SubmissionStatus, ShopOrderStatus } from "@/lib/supabase/types";
+
+export const dynamic = "force-dynamic";
 
 const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   draft: "Draft",
@@ -28,6 +32,16 @@ const SUBMISSION_STATUS_LABELS: Record<SubmissionStatus, string> = {
   cancelled: "Cancelled",
 };
 
+const ORDER_STATUS_LABELS: Record<ShopOrderStatus, string> = {
+  pending_payment: "Pending payment",
+  paid: "Paid",
+  packing: "Packing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  refunded: "Refunded",
+  cancelled: "Cancelled",
+};
+
 type ActivityRow = {
   when: string;
   kind: "submission" | "order";
@@ -39,26 +53,28 @@ type ActivityRow = {
 };
 
 export default async function AdminDashboardPage() {
-  // ---- BUY-side (real, from Supabase) ----
-  const [stats, submissionActivity] = await Promise.all([
+  const [stats, submissionActivity, orders] = await Promise.all([
     getAdminSubmissionStats(),
     getAdminRecentActivity(6),
+    listAdminOrders("all"),
   ]);
 
-  // ---- SELL-side (still mock — lands in Phase 2b) ----
-  const revenueGross = MOCK_ORDERS.filter((o) =>
-    ["paid", "packing", "shipped", "delivered"].includes(o.status),
-  ).reduce((s, o) => s + o.total_gbp, 0);
-  const ordersToPack = MOCK_ORDERS.filter(
+  const revenueGross = orders
+    .filter((o) => ["paid", "packing", "shipped", "delivered"].includes(o.status))
+    .reduce((s, o) => s + Number(o.total_gbp), 0);
+  const ordersToPack = orders.filter(
     (o) => o.status === "paid" || o.status === "packing",
+  ).length;
+  const pendingPayment = orders.filter(
+    (o) => o.status === "pending_payment",
   ).length;
   const activeListings = MOCK_LISTINGS.filter((l) => l.status === "active").length;
   const lowStock = MOCK_LISTINGS.filter(
     (l) => l.status === "active" && l.qty_in_stock <= 1,
   ).length;
   const featured = getFeaturedListings(FEATURED_SLOT_COUNT);
+  const emptyFeaturedSlots = FEATURED_SLOT_COUNT - featured.length;
 
-  // ---- Combined recent activity feed ----
   const activity: ActivityRow[] = [
     ...submissionActivity.map<ActivityRow>((s) => ({
       when: s.when,
@@ -69,57 +85,124 @@ export default async function AdminDashboardPage() {
       amount: s.amount,
       href: `/admin/submissions/${s.ref}`,
     })),
-    ...MOCK_ORDERS.map<ActivityRow>((o) => ({
+    ...orders.slice(0, 8).map<ActivityRow>((o) => ({
       when: o.placed_at,
       kind: "order",
       ref: o.reference,
       who: o.buyer_name,
       status: ORDER_STATUS_LABELS[o.status],
-      amount: o.total_gbp,
-      href: `/admin/orders?status=${o.status}`,
+      amount: Number(o.total_gbp),
+      href: `/admin/orders/${o.reference}`,
     })),
   ]
     .sort((a, b) => b.when.localeCompare(a.when))
-    .slice(0, 8);
+    .slice(0, 10);
+
+  const actionQueue = buildActionQueue({
+    awaitingCards: stats.awaitingCards,
+    received: stats.received,
+    offerRevised: stats.offerRevised,
+    pendingPayment,
+    ordersToPack,
+    lowStock,
+    emptyFeaturedSlots,
+  });
 
   return (
-    <div className="px-4 py-6 max-w-[1400px] mx-auto flex flex-col gap-8">
-      <header className="flex flex-col gap-2">
-        <span className="font-display text-[10px] tracking-wider text-muted">
-          Dashboard
-        </span>
-        <h1 className="font-display text-[32px] leading-none tracking-tight">
-          Today at cardbuy
-        </h1>
-        <p className="text-secondary text-[13px]">
-          Two sides of the business in one view.
-        </p>
-      </header>
+    <div className="px-4 md:px-6 py-6 max-w-[1400px] mx-auto flex flex-col gap-6">
+      <AdminPageHeader
+        crumbs={[{ label: "Admin", href: "/admin" }, { label: "Dashboard" }]}
+        title="Today at cardbuy"
+        kicker={{ label: "LIVE", tone: "teal" }}
+        subtitle="The two sides of the business in one glance — buy queue, sell queue, and what needs your attention now."
+      />
 
-      {/* Two-column stats: BUY vs SELL */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* BUY SIDE */}
-        <div className="pop-card rounded-md p-4 flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <span className="bg-yellow text-ink border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
-              BUY · LIVE
-            </span>
-            <Annotation>buylist activity</Annotation>
+      {/* ─── Action queue ─── */}
+      <SectionCard
+        eyebrow="Needs your attention"
+        title="Action queue"
+        actions={
+          <span className="font-display text-[11px] tracking-wider tabular-nums text-muted">
+            {actionQueue.length} open
+          </span>
+        }
+      >
+        {actionQueue.length === 0 ? (
+          <div className="border-2 border-dashed border-ink/25 rounded-md p-5 text-center text-secondary text-[13px]">
+            All clear. Nothing needs your attention right now.
           </div>
+        ) : (
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {actionQueue.map((item) => (
+              <li key={item.title}>
+                <Link
+                  href={item.href}
+                  className={`pop-block rounded-md p-3 flex items-center gap-3 ${item.bg}`}
+                >
+                  <span
+                    className="font-display text-[28px] leading-none tabular-nums text-ink min-w-[44px] text-center"
+                    aria-hidden
+                  >
+                    {item.count}
+                  </span>
+                  <span className="flex-1">
+                    <span className="font-display text-[12px] tracking-wider uppercase text-ink block">
+                      {item.title}
+                    </span>
+                    <span className="text-[11px] text-ink/70 block">
+                      {item.cta}
+                    </span>
+                  </span>
+                  <span
+                    className="font-display text-[13px] text-ink shrink-0"
+                    aria-hidden
+                  >
+                    →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+
+      {/* ─── Two-column KPIs: buy vs sell ─── */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <SectionCard
+          eyebrow="Buy side"
+          title="Buylist"
+          actions={
+            <span className="border-2 border-ink bg-yellow px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
+              LIVE
+            </span>
+          }
+        >
           <div className="grid grid-cols-2 gap-3">
-            <Stat label="Submissions / total" value={stats.total} />
-            <Stat
-              label="£ committed (open)"
-              value={formatGBP(stats.committedGbp)}
+            <StatCard
+              label="Open submissions"
+              value={stats.total - stats.paid - stats.rejected}
+              sub={`${stats.total} total`}
+              href="/admin/submissions"
             />
-            <Stat label="Cards in queue" value={stats.cardsInQueue} />
-            <Stat
+            <StatCard
+              label="£ committed"
+              value={formatGBP(stats.committedGbp)}
+              sub="Across open submissions"
+            />
+            <StatCard
+              label="Cards in queue"
+              value={stats.cardsInQueue}
+              sub="Received · reviewing · offered"
+            />
+            <StatCard
               label="Awaiting cards"
               value={stats.awaitingCards}
-              accent={stats.awaitingCards > 0 ? "warn" : undefined}
+              tone={stats.awaitingCards > 0 ? "yellow" : "paper"}
+              sub={stats.awaitingCards > 0 ? "Posted but not received" : "None"}
+              href="/admin/submissions?status=submitted"
             />
           </div>
-          <div className="flex gap-3 text-[11px] font-display tracking-wider">
+          <div className="flex gap-3 pt-3 text-[11px] font-display tracking-wider">
             <Link
               href="/admin/submissions"
               className="underline underline-offset-4 decoration-2 hover:text-pink"
@@ -133,27 +216,45 @@ export default async function AdminDashboardPage() {
               MARGIN DIALS →
             </Link>
           </div>
-        </div>
+        </SectionCard>
 
-        {/* SELL SIDE */}
-        <div className="pop-card rounded-md p-4 flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <span className="bg-pink text-ink border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
-              SELL · MOCK
+        <SectionCard
+          eyebrow="Sell side"
+          title="Shopfront"
+          actions={
+            <span className="border-2 border-ink bg-pink px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
+              LIVE
             </span>
-            <Annotation>shopfront activity</Annotation>
-          </div>
+          }
+        >
           <div className="grid grid-cols-2 gap-3">
-            <Stat label="Revenue / week" value={formatGBP(revenueGross)} />
-            <Stat label="Orders to pack" value={ordersToPack} />
-            <Stat label="Active listings" value={activeListings} />
-            <Stat
+            <StatCard
+              label="Revenue committed"
+              value={formatGBP(revenueGross)}
+              sub="Paid through delivered"
+            />
+            <StatCard
+              label="Orders to pack"
+              value={ordersToPack}
+              tone={ordersToPack > 0 ? "pink" : "paper"}
+              href="/admin/orders?status=paid"
+              sub={ordersToPack > 0 ? "Needs shipping label" : "None"}
+            />
+            <StatCard
+              label="Active listings"
+              value={activeListings}
+              sub={`${MOCK_LISTINGS.length} total stocked`}
+              href="/admin/inventory"
+            />
+            <StatCard
               label="Low-stock alerts"
               value={lowStock}
-              accent={lowStock > 0 ? "warn" : undefined}
+              tone={lowStock > 0 ? "warn" : "paper"}
+              sub={lowStock > 0 ? "1 or fewer in stock" : "Healthy"}
+              href="/admin/inventory"
             />
           </div>
-          <div className="flex gap-3 text-[11px] font-display tracking-wider">
+          <div className="flex gap-3 pt-3 text-[11px] font-display tracking-wider">
             <Link
               href="/admin/orders"
               className="underline underline-offset-4 decoration-2 hover:text-pink"
@@ -166,23 +267,29 @@ export default async function AdminDashboardPage() {
             >
               INVENTORY →
             </Link>
+            <Link
+              href="/admin/demand"
+              className="underline underline-offset-4 decoration-2 hover:text-pink"
+            >
+              DEMAND →
+            </Link>
           </div>
-        </div>
+        </SectionCard>
       </section>
 
-      {/* FEATURED slot manager (mock) */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
-          <Annotation>
-            FEATURED SLOTS · {featured.length} / {FEATURED_SLOT_COUNT} used (homepage)
-          </Annotation>
+      {/* ─── Featured slot manager ─── */}
+      <SectionCard
+        eyebrow={`Featured on homepage · ${featured.length} / ${FEATURED_SLOT_COUNT} used`}
+        title="Featured slots"
+        actions={
           <Link
             href="/admin/inventory?tab=featured"
-            className="text-[11px] font-display tracking-wider underline underline-offset-4 decoration-2 hover:text-pink"
+            className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 hover:text-pink"
           >
             Manage in inventory →
           </Link>
-        </div>
+        }
+      >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: FEATURED_SLOT_COUNT }).map((_, i) => {
             const slot = featured[i];
@@ -219,11 +326,14 @@ export default async function AdminDashboardPage() {
             );
           })}
         </div>
-      </section>
+      </SectionCard>
 
-      {/* Combined activity feed */}
-      <section className="flex flex-col gap-2">
-        <Annotation>RECENT ACTIVITY</Annotation>
+      {/* ─── Activity feed ─── */}
+      <SectionCard
+        eyebrow="Recent activity"
+        title="Across both sides"
+        padded={false}
+      >
         <Table>
           <THead>
             <TR>
@@ -279,32 +389,91 @@ export default async function AdminDashboardPage() {
             )}
           </TBody>
         </Table>
-      </section>
+      </SectionCard>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string | number;
-  accent?: "warn";
-}) {
-  return (
-    <div className="border-2 border-ink rounded-md p-3 bg-paper-strong">
-      <div className="text-[10px] font-display uppercase tracking-wider text-muted">
-        {label}
-      </div>
-      <div
-        className={`font-display text-[22px] leading-tight tracking-tight tabular-nums mt-1 ${
-          accent === "warn" ? "text-warn" : "text-ink"
-        }`}
-      >
-        {value}
-      </div>
-    </div>
-  );
+type Action = {
+  title: string;
+  count: number;
+  cta: string;
+  href: string;
+  bg: string;
+};
+
+function buildActionQueue(input: {
+  awaitingCards: number;
+  received: number;
+  offerRevised: number;
+  pendingPayment: number;
+  ordersToPack: number;
+  lowStock: number;
+  emptyFeaturedSlots: number;
+}): Action[] {
+  const items: Action[] = [];
+  if (input.received > 0) {
+    items.push({
+      title: "Received · review & quote",
+      count: input.received,
+      cta: "Post arrived, need quoting",
+      href: "/admin/submissions?status=received",
+      bg: "bg-yellow",
+    });
+  }
+  if (input.offerRevised > 0) {
+    items.push({
+      title: "Offers out · awaiting seller",
+      count: input.offerRevised,
+      cta: "Waiting for accept / reject",
+      href: "/admin/submissions?status=offer_revised",
+      bg: "bg-paper-strong",
+    });
+  }
+  if (input.awaitingCards > 0) {
+    items.push({
+      title: "Awaiting cards in post",
+      count: input.awaitingCards,
+      cta: "Seller has shipped (or should have)",
+      href: "/admin/submissions?status=submitted",
+      bg: "bg-paper-strong",
+    });
+  }
+  if (input.pendingPayment > 0) {
+    items.push({
+      title: "Orders pending payment",
+      count: input.pendingPayment,
+      cta: "Buyer hasn't paid yet",
+      href: "/admin/orders?status=pending_payment",
+      bg: "bg-pink",
+    });
+  }
+  if (input.ordersToPack > 0) {
+    items.push({
+      title: "Orders to pack & ship",
+      count: input.ordersToPack,
+      cta: "Paid — print label and send",
+      href: "/admin/orders?status=paid",
+      bg: "bg-pink",
+    });
+  }
+  if (input.lowStock > 0) {
+    items.push({
+      title: "Listings low on stock",
+      count: input.lowStock,
+      cta: "One or fewer remaining",
+      href: "/admin/inventory",
+      bg: "bg-teal",
+    });
+  }
+  if (input.emptyFeaturedSlots > 0) {
+    items.push({
+      title: "Empty featured slots",
+      count: input.emptyFeaturedSlots,
+      cta: "Homepage promo slots unused",
+      href: "/admin/inventory?tab=featured",
+      bg: "bg-teal",
+    });
+  }
+  return items;
 }

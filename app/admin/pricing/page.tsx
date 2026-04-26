@@ -1,3 +1,4 @@
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { getMarginConfig, getLiveMarginRow } from "@/app/_actions/margins";
 import { PricingForm } from "./PricingForm";
 import { FxSyncButton } from "./FxSyncButton";
@@ -15,7 +16,17 @@ export default async function AdminPricingPage() {
   ]);
 
   return (
-    <div className="px-4 py-6 max-w-[1200px] mx-auto flex flex-col gap-4">
+    <div className="px-4 md:px-6 py-6 max-w-[1300px] mx-auto flex flex-col gap-5">
+      <AdminPageHeader
+        crumbs={[
+          { label: "Admin", href: "/admin" },
+          { label: "Buy side" },
+          { label: "Pricing" },
+        ]}
+        title="Pricing & margins"
+        kicker={{ label: "CONTROL PANEL", tone: "yellow" }}
+        subtitle="The dials behind every buylist quote — global margin, FX, per-condition and per-set multipliers. Saves snapshot into audit history."
+      />
       <FxSyncButton
         lastUpdatedAt={row?.fx_rate_updated_at ?? null}
         manualOverride={row?.fx_manual_override ?? false}
