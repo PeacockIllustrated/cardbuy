@@ -1,6 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function PageFooter() {
+  const pathname = usePathname() ?? "";
+  // Admin is its own self-contained portal — no marketing footer.
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <footer className="border-t-[3px] border-ink bg-ink text-paper-strong mt-12">
       <div className="max-w-[1300px] mx-auto px-4 py-6 flex flex-col md:flex-row gap-6 md:gap-12 items-start md:items-center justify-between">
