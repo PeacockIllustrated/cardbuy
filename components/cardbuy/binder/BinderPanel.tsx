@@ -13,6 +13,8 @@ import {
 } from "react";
 import { CardImage } from "@/components/cardbuy/CardImage";
 import { GradedCardScanner } from "@/components/cardbuy/binder/GradedCardScanner";
+import { PacksView } from "@/components/cardbuy/binder/PacksView";
+import type { BinderPackSummary } from "@/app/_actions/binder";
 import {
   addBinderEntry,
   removeBinderEntry,
@@ -49,6 +51,10 @@ type RegionDef = {
   start: number;
   end: number;
 };
+
+/** Top-level binder surface — flips the whole panel between the
+ *  dex-by-region view and the packs-by-set view. */
+type BinderView = "regions" | "packs";
 
 const REGION_TABS: RegionDef[] = [
   { id: "all",    label: "All",    start: 1,   end: 10000 },
@@ -167,6 +173,9 @@ type Props = {
   /** Trainer / Energy / non-Pokémon owned entries, shown on the
    *  side shelf peeking out from behind the right-hand page. */
   shelfEntries?: BinderShelfEntry[];
+  /** Pack-level summaries for the alternative "Packs" view. Empty
+   *  array means the user has no cards in any known pack. */
+  packs?: BinderPackSummary[];
 };
 
 const SLOTS_PER_PAGE = 9;
@@ -208,11 +217,14 @@ export function BinderPanel({
   initialPageIndex,
   userDisplayName,
   shelfEntries,
+  packs = [],
 }: Props) {
   // totalOwned + totalSlots are passed by the server page but the
   // panel now derives both from the active region filter — page-level
   // counts would be wrong for Johto / Paldea / etc.
   const [region, setRegion] = useState<RegionId>("all");
+  // Top-level surface switch — the regions binder vs. the packs grid.
+  const [view, setView] = useState<BinderView>("regions");
 
   /* ── Filtered slot list — dex numbers inside the active region ── */
   const filteredSlots = useMemo(() => {
@@ -451,6 +463,172 @@ export function BinderPanel({
 
   return (
     <div ref={panelRef} className="relative">
+      {/* Top-level view switch — flips the whole panel between the
+          dex-by-region binder and the packs-by-set surface. */}
+      <ViewTabs active={view} onChange={setView} packCount={packs.length} />
+
+      {view === "packs" ? (
+        <PacksView packs={packs} />
+      ) : (
+        <RegionsBinder
+          region={region}
+          changeRegion={changeRegion}
+          flip={flip}
+          activeSlot={activeSlot}
+          lockedDex={lockedDex}
+          filteredOwned={filteredOwned}
+          filteredTotal={filteredTotal}
+          pct={pct}
+          userDisplayName={userDisplayName}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          baseSlots={baseSlots}
+          overlaySlots={overlaySlots}
+          activeDex={activeDex}
+          handleSlotEnter={handleSlotEnter}
+          handleSlotLeave={handleSlotLeave}
+          handleSlotClick={handleSlotClick}
+          handleFlipEnd={handleFlipEnd}
+          suppressNextClickRef={suppressNextClick}
+          startFlip={startFlip}
+          beginHold={beginHold}
+          stopFastCycle={stopFastCycle}
+          pageIndex={pageIndex}
+          totalPages={totalPages}
+          displayPage={displayPage}
+          shelfEntries={shelfEntries}
+          activeShelfId={activeShelfId}
+          lockedShelf={lockedShelf}
+          activeShelfEntry={activeShelfEntry}
+          setHoveredShelf={setHoveredShelf}
+          setLockedShelf={setLockedShelf}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * View tabs — the very-top control switching between the regions
+ * binder and the packs grid. Lighter weight than the region pills:
+ * two big buttons with the active one inverted.
+ * ───────────────────────────────────────────────────────────────── */
+
+function ViewTabs({
+  active,
+  onChange,
+  packCount,
+}: {
+  active: BinderView;
+  onChange: (next: BinderView) => void;
+  packCount: number;
+}) {
+  return (
+    <div className="flex items-stretch gap-1.5 md:gap-2 mb-3 md:mb-4">
+      {(
+        [
+          { id: "regions", label: "Regions" },
+          { id: "packs", label: `Packs${packCount > 0 ? ` · ${packCount}` : ""}` },
+        ] as const
+      ).map((opt) => {
+        const isActive = opt.id === active;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => onChange(opt.id)}
+            aria-pressed={isActive}
+            className={`pop-card rounded-sm px-3 py-1.5 font-display text-[11px] tracking-[0.22em] uppercase transition-[background] duration-150 ${
+              isActive
+                ? "bg-ink text-paper-strong"
+                : "bg-paper-strong text-ink hover:bg-yellow"
+            }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * RegionsBinder — the existing dex-by-region surface, lifted into
+ * its own component so the parent can swap between it and the
+ * packs view without disturbing the surrounding state hooks.
+ * ───────────────────────────────────────────────────────────────── */
+
+type RegionsBinderProps = {
+  region: RegionId;
+  changeRegion: (next: RegionId) => void;
+  flip: FlipState | null;
+  activeSlot: BinderSlotPayload | null;
+  lockedDex: number | null;
+  filteredOwned: number;
+  filteredTotal: number;
+  pct: number;
+  userDisplayName: string;
+  rangeStart: number;
+  rangeEnd: number;
+  baseSlots: BinderSlotPayload[];
+  overlaySlots: BinderSlotPayload[] | null;
+  activeDex: number | null;
+  handleSlotEnter: (dex: number) => void;
+  handleSlotLeave: () => void;
+  handleSlotClick: (dex: number) => void;
+  handleFlipEnd: () => void;
+  suppressNextClickRef: { current: boolean };
+  startFlip: (dir: "next" | "prev") => void;
+  beginHold: (dir: "next" | "prev") => void;
+  stopFastCycle: () => void;
+  pageIndex: number;
+  totalPages: number;
+  displayPage: number;
+  shelfEntries?: BinderShelfEntry[];
+  activeShelfId: string | null;
+  lockedShelf: string | null;
+  activeShelfEntry: BinderShelfEntry | null;
+  setHoveredShelf: (id: string | null) => void;
+  setLockedShelf: (
+    update: ((cur: string | null) => string | null),
+  ) => void;
+};
+
+function RegionsBinder({
+  region,
+  changeRegion,
+  flip,
+  activeSlot,
+  lockedDex,
+  filteredOwned,
+  filteredTotal,
+  pct,
+  userDisplayName,
+  rangeStart,
+  rangeEnd,
+  baseSlots,
+  overlaySlots,
+  activeDex,
+  handleSlotEnter,
+  handleSlotLeave,
+  handleSlotClick,
+  handleFlipEnd,
+  suppressNextClickRef,
+  startFlip,
+  beginHold,
+  stopFastCycle,
+  pageIndex,
+  totalPages,
+  displayPage,
+  shelfEntries,
+  activeShelfId,
+  lockedShelf,
+  activeShelfEntry,
+  setHoveredShelf,
+  setLockedShelf,
+}: RegionsBinderProps) {
+  return (
+    <>
       {/* Region glossary — tabs along the top. Clicking a region
           fires the page-turn animation with a snapshot of the current
           page as the outgoing overlay, then jumps to page 0 of the
@@ -561,8 +739,8 @@ export function BinderPanel({
             <div className="mt-5 flex items-center justify-between">
               <PageNavButton
                 onClick={() => {
-                  if (suppressNextClick.current) {
-                    suppressNextClick.current = false;
+                  if (suppressNextClickRef.current) {
+                    suppressNextClickRef.current = false;
                     return;
                   }
                   startFlip("prev");
@@ -580,8 +758,8 @@ export function BinderPanel({
               </div>
               <PageNavButton
                 onClick={() => {
-                  if (suppressNextClick.current) {
-                    suppressNextClick.current = false;
+                  if (suppressNextClickRef.current) {
+                    suppressNextClickRef.current = false;
                     return;
                   }
                   startFlip("next");
@@ -617,7 +795,7 @@ export function BinderPanel({
           />
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
 

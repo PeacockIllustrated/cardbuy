@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CardSet } from "@/lib/types/card";
 
@@ -28,7 +28,7 @@ const PALETTES: Array<[string, string, string]> = [
   ["#8b0e66", "#ff4eb8", "#ffe600"], // magenta · pink · yellow foil
 ];
 
-function paletteFor(id: string): [string, string, string] {
+export function paletteFor(id: string): [string, string, string] {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return PALETTES[Math.abs(h) % PALETTES.length];
@@ -173,9 +173,11 @@ function PackOpenOverlay({
   light: string;
   foil: string;
 }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted || typeof document === "undefined") return null;
+  // The overlay is only ever mounted in response to a client click
+  // (`setOpening(true)` in the parent), so it can't run during SSR —
+  // a single `typeof document` guard is enough. No "mounted" state
+  // means no setState-in-effect for React 19's purity rule.
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div
@@ -216,7 +218,20 @@ function PackOpenOverlay({
  * grid tile and the large overlay pack during opening.
  * ───────────────────────────────────────────────────────────────── */
 
-function PackFace({
+/** Minimum shape PackFace needs from a set. CardSet satisfies this,
+ *  but so do trimmed payloads passed from server components — keep
+ *  the prop wide so the binder can re-use the same artwork without
+ *  carrying full CardSet objects across the boundary. */
+export type PackFaceSet = {
+  id: string;
+  name: string;
+  series: string;
+  releaseYear: number;
+  logoUrl?: string | null;
+  symbolUrl?: string | null;
+};
+
+export function PackFace({
   set,
   cardCount,
   dark,
@@ -225,7 +240,7 @@ function PackFace({
   withBurst,
   opening,
 }: {
-  set: CardSet;
+  set: PackFaceSet;
   cardCount: number;
   dark: string;
   light: string;

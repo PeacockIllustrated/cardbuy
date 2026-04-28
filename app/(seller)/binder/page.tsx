@@ -8,6 +8,7 @@ import {
 } from "@/components/cardbuy/binder/BinderPanel";
 import { MOCK_LISTINGS } from "@/lib/mock/mock-listings";
 import { getCardById } from "@/lib/fixtures/cards";
+import { summarisePacks } from "@/lib/binder/packs";
 import { NATIONAL_DEX } from "@/lib/fixtures/pokedex";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -141,6 +142,13 @@ export default async function BinderPage({
   for (const [dex, ls] of listingsByDex) {
     marketByDex.set(dex, Math.min(...ls.map((l) => l.price_gbp)));
   }
+
+  // Pack summaries for the alternative "Packs" view. Re-uses the
+  // entries we just loaded — no extra round-trip — and groups them
+  // by set_id with progress numbers attached.
+  const packs = summarisePacks(
+    binderEntries.map((e) => ({ card_id: e.card_id, quantity: e.quantity })),
+  );
 
   const totalSlots = NATIONAL_DEX.length;
   const totalOwned = NATIONAL_DEX.filter((d) => ownedByDex.has(d.number)).length;
@@ -281,6 +289,7 @@ export default async function BinderPage({
           initialPageIndex={initialPageIndex}
           userDisplayName={displayName}
           shelfEntries={shelfEntries}
+          packs={packs}
         />
       </div>
     </main>

@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getCardsBySet, getSetById } from "@/lib/fixtures/cards";
+import { summarisePacks } from "@/lib/binder/packs";
+import type {
+  BinderPackSummary,
+  PackCardEntry,
+  PackDetailPayload,
+} from "@/lib/binder/packs";
 import type {
   GradingCompany,
   Grade,
@@ -100,6 +107,104 @@ export async function getCardBinderStatus(cardId: string): Promise<{
       wishlistRes.data.target_price_gbp !== null
         ? Number(wishlistRes.data.target_price_gbp)
         : null,
+  };
+}
+
+/* ─── packs view ────────────────────────────────────────────────── */
+
+export type {
+  BinderPackSummary,
+  PackCardEntry,
+  PackDetailPayload,
+} from "@/lib/binder/packs";
+
+/**
+ * Build a summary of every pack the signed-in user owns at least one
+ * card from. Sorted newest-first by release date.
+ */
+export async function getMyPackSummaries(): Promise<BinderPackSummary[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("lewis_binder_entries")
+    .select("card_id, quantity")
+    .eq("user_id", user.id);
+  if (error) throw new Error(`Failed to load pack summaries: ${error.message}`);
+
+  return summarisePacks(data ?? []);
+}
+
+/**
+ * Fetch every card in `setId` along with the signed-in user's
+ * ownership status. Powers the click-to-expand pack detail in the
+ * binder's Packs view.
+ */
+export async function getPackCardsForUser(
+  setId: string,
+): Promise<PackDetailPayload> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login?next=/binder");
+
+  const set = getSetById(setId);
+  if (!set) throw new Error(`Unknown pack: ${setId}`);
+
+  const { data: entries, error } = await supabase
+    .from("lewis_binder_entries")
+    .select("card_id, quantity, variant")
+    .eq("user_id", user.id);
+  if (error)
+    throw new Error(`Failed to load entries for pack: ${error.message}`);
+
+  const ownedByCard = new Map<
+    string,
+    { quantity: number; variants: Set<ItemVariant> }
+  >();
+  for (const e of entries ?? []) {
+    const slot = ownedByCard.get(e.card_id) ?? {
+      quantity: 0,
+      variants: new Set<ItemVariant>(),
+    };
+    slot.quantity += e.quantity;
+    slot.variants.add(e.variant);
+    ownedByCard.set(e.card_id, slot);
+  }
+
+  const cards: PackCardEntry[] = getCardsBySet(setId).map((c) => {
+    const slot = ownedByCard.get(c.id);
+    return {
+      id: c.id,
+      name: c.name,
+      number: c.number,
+      imageSmall: c.images.small ?? null,
+      rarity: c.rarity ?? null,
+      supertype: c.supertype,
+      owned: slot !== undefined,
+      quantity: slot?.quantity ?? 0,
+      variants: slot ? Array.from(slot.variants) : [],
+    };
+  });
+
+  cards.sort((a, b) => {
+    const na = parseInt(a.number, 10);
+    const nb = parseInt(b.number, 10);
+    if (Number.isFinite(na) && Number.isFinite(nb) && na !== nb) return na - nb;
+    return a.number.localeCompare(b.number);
+  });
+
+  return {
+    setId: set.id,
+    setName: set.name,
+    series: set.series,
+    releaseYear: set.releaseYear,
+    printedTotal: set.printedTotal,
+    cards,
   };
 }
 
