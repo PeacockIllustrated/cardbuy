@@ -68,11 +68,8 @@ export function CheckoutForm({
 
   useEffect(() => {
     if (cartKey === null) return;
+    if (lines.length === 0) return; // empty state derived below
     let cancelled = false;
-    if (lines.length === 0) {
-      setResolved([]);
-      return;
-    }
     getListingsByIds(lines.map((l) => l.listingId)).then((listings) => {
       if (cancelled) return;
       const byId = new Map(listings.map((l) => [l.id, l]));
@@ -89,6 +86,8 @@ export function CheckoutForm({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartKey]);
+
+  // Empty state is derived rather than tracked in `resolved`.
 
   const subtotal =
     resolved?.reduce(
@@ -140,7 +139,31 @@ export function CheckoutForm({
     });
   };
 
-  if (!hydrated || resolved === null) {
+  // Empty state is derived rather than tracked in `resolved`. The
+  // four-branch order is hydration → cart-empty → fetching → race
+  // (resolved came back empty), each with its own UI.
+  if (!hydrated) {
+    return (
+      <div className="pop-card rounded-md p-8 text-center text-secondary">
+        Loading basket…
+      </div>
+    );
+  }
+
+  if (lines.length === 0) {
+    return (
+      <div className="pop-card rounded-md p-12 text-center flex flex-col gap-4 items-center">
+        <span className="font-display text-[22px]">
+          Your basket is empty
+        </span>
+        <Link href="/shop">
+          <Button>Browse the shop</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  if (resolved === null) {
     return (
       <div className="pop-card rounded-md p-8 text-center text-secondary">
         Loading basket…

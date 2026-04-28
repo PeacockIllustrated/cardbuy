@@ -4,8 +4,10 @@ import Image from "next/image";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
 } from "react";
 import { ImagePlaceholder } from "@/components/wireframe/ImagePlaceholder";
@@ -157,6 +159,30 @@ function resetTilt(el: HTMLDivElement) {
   el.style.setProperty("--scale", "1");
 }
 
+/* ─────────────────────────────────────────────────────────────────
+ * Device-orientation capability detection — read once via
+ * `useSyncExternalStore` so server/client snapshots can legitimately
+ * differ (server has no `window`, the iOS API only exists at runtime)
+ * without tripping the React-19 setState-in-effect rule. The
+ * "subscribe" arg is a no-op because device support never changes
+ * after page load.
+ * ───────────────────────────────────────────────────────────────── */
+
+function detectTiltPermission(): TiltPermission {
+  if (typeof window === "undefined") return "unknown";
+  const DOE = (window as unknown as { DeviceOrientationEvent?: DeviceOrientationEventIOS })
+    .DeviceOrientationEvent;
+  if (!DOE) return "unsupported";
+  if (typeof DOE.requestPermission === "function") return "needed";
+  return "granted";
+}
+function subscribeNoop(): () => void {
+  return () => {};
+}
+function getTiltPermissionServerSnapshot(): TiltPermission {
+  return "unknown";
+}
+
 /**
  * Real card art in a pop-art sticker frame. Falls back to the grayscale
  * `ImagePlaceholder` if the image URL is missing or errors.
@@ -177,7 +203,10 @@ export function CardImage({
   alt,
   size = "md",
   priority = false,
-  hideBadge = false,
+  // `hideBadge` used to gate a rarity badge that was retired in the
+  // pop-art rebrand. The prop stays in `Props` so existing callers
+  // don't need a sweep, but it's intentionally not destructured here
+  // — anything passed gets ignored.
   rarity,
   static: isStatic = false,
   interactive: interactiveProp,
@@ -187,17 +216,35 @@ export function CardImage({
 }: Props) {
   const [errored, setErrored] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [tiltPermission, setTiltPermission] =
-    useState<TiltPermission>("unknown");
+  // Device support is read directly from the env via
+  // `useSyncExternalStore` — server snapshot is "unknown", client
+  // snapshot is the real `DeviceOrientationEvent` capability. Once the
+  // user explicitly grants or denies via the iOS prompt, we layer that
+  // override on top — the override beats the env-detected default.
+  const detectedTilt = useSyncExternalStore(
+    subscribeNoop,
+    detectTiltPermission,
+    getTiltPermissionServerSnapshot,
+  );
+  const [tiltOverride, setTiltOverride] = useState<
+    "granted" | "denied" | null
+  >(null);
+  const tiltPermission: TiltPermission = tiltOverride ?? detectedTilt;
   const outerRef = useRef<HTMLDivElement | null>(null);
   const swipeActiveRef = useRef(false);
   const tiltPermissionRef = useRef<TiltPermission>("unknown");
   const smoothRxRef = useRef(0);
   const smoothRyRef = useRef(0);
   // Stash the caller's callback in a ref so the touch / gyro effects
-  // don't need to re-register when its identity changes.
+  // don't need to re-register when its identity changes. The sync runs
+  // in a layout effect (rather than during render) so the ref update
+  // is a side-effect, satisfying the React purity rules — yet still
+  // happens before any subscription fires this render cycle, so the
+  // very next event already sees the latest callback.
   const onEngagedChangeRef = useRef(onEngagedChange);
-  onEngagedChangeRef.current = onEngagedChange;
+  useLayoutEffect(() => {
+    onEngagedChangeRef.current = onEngagedChange;
+  });
   const engagedRef = useRef(false);
   const { w, h, sizes } = DIMS[size];
 
@@ -226,23 +273,8 @@ export function CardImage({
     }
   }, []);
 
-  // Detect device-orientation support + whether an iOS-style permission
-  // prompt is required. Android / desktop Chrome fire the event without
-  // a gate, so we treat those as implicitly granted.
-  useEffect(() => {
-    if (!gyroEligible) return;
-    if (typeof window === "undefined") return;
-    const DOE = (window as unknown as { DeviceOrientationEvent?: DeviceOrientationEventIOS }).DeviceOrientationEvent;
-    if (!DOE) {
-      setTiltPermission("unsupported");
-      return;
-    }
-    if (typeof DOE.requestPermission === "function") {
-      setTiltPermission("needed");
-    } else {
-      setTiltPermission("granted");
-    }
-  }, [gyroEligible]);
+  // (Device support is read via `detectTiltPermission` above, no
+  //  effect needed — the env detection is one-shot and stable.)
 
   // Native touch handlers — React synthesises touchmove as passive, so
   // preventDefault from React's onTouchMove is unreliable. Attach directly.
@@ -316,7 +348,9 @@ export function CardImage({
       el.removeEventListener("touchend", disengage);
       el.removeEventListener("touchcancel", disengage);
     };
-  }, [interactive]);
+    // pushEngaged is a stable useCallback — listing it satisfies
+    // exhaustive-deps without re-running the effect.
+  }, [interactive, pushEngaged]);
 
   // Attach the device-orientation listener once permission is granted.
   useEffect(() => {
@@ -363,16 +397,16 @@ export function CardImage({
         resetTilt(el);
       }
     };
-  }, [gyroEligible, tiltPermission]);
+  }, [gyroEligible, tiltPermission, pushEngaged]);
 
   async function requestTiltPermission() {
     const DOE = (window as unknown as { DeviceOrientationEvent?: DeviceOrientationEventIOS }).DeviceOrientationEvent;
     if (!DOE?.requestPermission) return;
     try {
       const result = await DOE.requestPermission();
-      setTiltPermission(result === "granted" ? "granted" : "denied");
+      setTiltOverride(result === "granted" ? "granted" : "denied");
     } catch {
-      setTiltPermission("denied");
+      setTiltOverride("denied");
     }
   }
 

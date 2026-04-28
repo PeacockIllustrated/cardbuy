@@ -36,6 +36,10 @@ type PerSet = {
 };
 
 export default async function MappingPreviewPage() {
+  // Diagnostic timing on a server-rendered admin page — `performance.now()`
+  // is intentionally non-deterministic here (we want wall-clock timings),
+  // so the React purity rule doesn't apply.
+  // eslint-disable-next-line react-hooks/purity
   const t0 = performance.now();
 
   // 1 · Resolve the 6 first-gen groupIds in one /groups call.
@@ -53,6 +57,7 @@ export default async function MappingPreviewPage() {
   for (const [setId, aliases] of Object.entries(PHASE3_SLICE1_SETS)) {
     const tcgName = aliases[0]; // primary name shown in UI
     const groupId = groupMap[setId] ?? null;
+    // eslint-disable-next-line react-hooks/purity
     const sStart = performance.now();
     if (!groupId) {
       perSet.push({
@@ -76,6 +81,7 @@ export default async function MappingPreviewPage() {
         groupId,
         result,
         error: null,
+        // eslint-disable-next-line react-hooks/purity
         ms: Math.round(performance.now() - sStart),
       });
     } catch (e) {
@@ -85,11 +91,13 @@ export default async function MappingPreviewPage() {
         groupId,
         result: null,
         error: e instanceof Error ? e.message : String(e),
+        // eslint-disable-next-line react-hooks/purity
         ms: Math.round(performance.now() - sStart),
       });
     }
   }
 
+  // eslint-disable-next-line react-hooks/purity
   const totalMs = Math.round(performance.now() - t0);
 
   // Totals across all sets.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 /* ─────────────────────────────────────────────────────────────────
  * Minimal localStorage-backed cart. Client-only — cart persistence
@@ -99,21 +99,19 @@ function getServerSnapshot(): string {
   return "[]";
 }
 
-// Module-level caches so `useCart` doesn't reparse on every render.
-let lastRaw = "\0"; // sentinel that can't equal any real JSON
-let lastLines: CartLine[] = [];
-
 export function useCart(): {
   lines: CartLine[];
   totalQty: number;
   hydrated: boolean;
 } {
   const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  if (raw !== lastRaw) {
-    lastRaw = raw;
+  // Parse once per snapshot — useMemo keyed on `raw` keeps the array
+  // reference stable across renders that don't actually change the
+  // cart, so consumers that depend on `lines` identity don't churn.
+  const lines = useMemo<CartLine[]>(() => {
     try {
       const parsed = JSON.parse(raw) as CartLine[];
-      lastLines = Array.isArray(parsed)
+      return Array.isArray(parsed)
         ? parsed.filter(
             (l) =>
               typeof l?.listingId === "string" &&
@@ -122,11 +120,11 @@ export function useCart(): {
           )
         : [];
     } catch {
-      lastLines = [];
+      return [];
     }
-  }
+  }, [raw]);
   // Hydrated once the server snapshot has been replaced by the real one.
   const hydrated = typeof window !== "undefined";
-  const totalQty = lastLines.reduce((s, l) => s + l.qty, 0);
-  return { lines: lastLines, totalQty, hydrated };
+  const totalQty = lines.reduce((s, l) => s + l.qty, 0);
+  return { lines, totalQty, hydrated };
 }
