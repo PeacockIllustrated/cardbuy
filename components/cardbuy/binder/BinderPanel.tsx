@@ -538,7 +538,14 @@ function ViewTabs({
             type="button"
             onClick={() => onChange(opt.id)}
             aria-pressed={isActive}
-            className={`pop-card rounded-sm px-3 py-1.5 font-display text-[11px] tracking-[0.22em] uppercase transition-[background] duration-150 ${
+            // Explicit border + shadow rather than `pop-card` so the
+            // active state's `bg-ink` reliably wins — `pop-card` sets
+            // its own background through a low-specificity `:where()`
+            // rule that can lose source-order ties to utilities. No
+            // `transition-colors` here either — the property animation
+            // can persist a stale render's colours past the React swap
+            // and produce a backwards-looking active state.
+            className={`rounded-sm border-[3px] border-ink shadow-[3px_3px_0_0_var(--color-ink)] px-3 py-1.5 font-display text-[11px] tracking-[0.22em] uppercase ${
               isActive
                 ? "bg-ink text-paper-strong"
                 : "bg-paper-strong text-ink hover:bg-yellow"
@@ -642,7 +649,12 @@ function RegionsBinder({
       <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative z-[1]">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.45fr] rounded-sm overflow-hidden border-[2px] border-ink">
           {/* ─── LEFT PAGE · info pane ───────────────────────────── */}
-          <section className="relative bg-paper-strong p-4 md:p-6 min-h-[320px] md:min-h-[520px] flex flex-col border-b-[2px] md:border-b-0 border-ink">
+          {/* `min-w-0` keeps this column locked to its grid allocation
+              — without it, an unbroken word in the dex / card name
+              heading would force the column wider, pushing content
+              over the spine into the right page. Mirrors the lock on
+              the Packs binder shell. */}
+          <section className="relative bg-paper-strong p-4 md:p-6 min-h-[320px] md:min-h-[520px] flex flex-col border-b-[2px] md:border-b-0 border-ink min-w-0">
             {activeSlot ? (
               <SlotDetails
                 slot={activeSlot}
@@ -839,7 +851,11 @@ function RegionTabs({
             onClick={() => onChange(r.id)}
             disabled={disabled}
             aria-pressed={isActive}
-            className={`shrink-0 pop-card rounded-sm px-2.5 py-1 font-display text-[10px] tracking-[0.18em] uppercase transition-[background] duration-150 disabled:opacity-50 ${
+            // Same `pop-card`-replacement trick as ViewTabs — explicit
+            // border + shadow so the active-state `bg-ink` wins
+            // reliably without fighting the pop-card frame's default.
+            // Transition is omitted on purpose; see ViewTabs.
+            className={`shrink-0 rounded-sm border-[3px] border-ink shadow-[3px_3px_0_0_var(--color-ink)] px-2.5 py-1 font-display text-[10px] tracking-[0.18em] uppercase disabled:opacity-50 ${
               isActive
                 ? "bg-ink text-paper-strong"
                 : "bg-paper-strong text-ink hover:bg-yellow"
@@ -1376,7 +1392,7 @@ function SlotDetails({
       <div className="font-display text-[10px] tracking-[0.25em] text-muted tabular-nums">
         #{String(dexNumber).padStart(3, "0")}
       </div>
-      <h2 className="font-display text-[26px] md:text-[32px] leading-[0.95] tracking-tight text-ink mt-0.5">
+      <h2 className="font-display text-[22px] md:text-[28px] leading-[1.05] tracking-tight text-ink mt-0.5 break-words">
         {dexName}
       </h2>
 

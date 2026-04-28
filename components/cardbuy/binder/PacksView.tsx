@@ -354,7 +354,7 @@ function PackPreviewPane({
       <div className="mt-4 flex justify-center">
         <div
           className={`pack-tile card-3d relative w-[140px] md:w-[160px] ${
-            pack.locked ? "opacity-65 saturate-50 brightness-75" : ""
+            pack.locked ? "grayscale opacity-70" : ""
           }`}
           style={{ "--pack-accent": light } as CSSProperties}
         >
@@ -507,7 +507,7 @@ function BinderPackTile({
       ? "ring-[3px] ring-yellow"
       : "ring-[3px] ring-ink/40"
     : "";
-  const lockedStyle = pack.locked ? "opacity-65 saturate-50 brightness-75" : "";
+  const lockedStyle = pack.locked ? "grayscale opacity-70" : "";
 
   return (
     <button
@@ -556,7 +556,7 @@ function BinderPackTile({
             yet" visible without obscuring the set logo behind. */}
         {pack.locked ? (
           <span
-            className="absolute z-[5] left-1/2 top-[50%] -translate-x-1/2 -translate-y-1/2 pop-card rounded-sm bg-ink text-paper-strong px-2.5 py-1 font-display text-[10px] tracking-[0.25em] uppercase rotate-[-6deg] pointer-events-none"
+            className="absolute z-[5] left-1/2 top-[50%] -translate-x-1/2 -translate-y-1/2 rounded-sm border-[3px] border-ink shadow-[3px_3px_0_0_var(--color-ink)] bg-ink text-paper-strong px-2.5 py-1 font-display text-[10px] tracking-[0.25em] uppercase rotate-[-6deg] pointer-events-none"
             aria-hidden
           >
             Locked

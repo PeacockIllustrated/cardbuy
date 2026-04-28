@@ -59,10 +59,18 @@ input[type="number"] {
 }
 
 /* ----------------------------------------------------------------
- * Pop-art block utility — the signature look.
- * 3px ink outline + 4px offset shadow that lifts on hover.
- * Applied to primary CTAs, featured tiles, hero blocks.
+ * Pop-art block utilities — the signature look.
+ *
+ * `.pop-card`'s default background is applied via `:where()` so it
+ * has zero specificity — any Tailwind `bg-*` utility placed alongside
+ * (e.g. `pop-card bg-ink` for an inverted "active" tab) overrides it
+ * automatically. Without this, the rule's background would silently
+ * win against utilities and produce white-on-white text on every
+ * inverted surface that uses the pop-card frame.
  * ----------------------------------------------------------------*/
+
+/* 3px ink outline + 4px offset shadow that lifts on hover. Applied
+ * to primary CTAs, featured tiles, hero blocks. */
 .pop-block {
   border: 3px solid var(--color-ink);
   box-shadow: 4px 4px 0 0 var(--color-ink);
@@ -77,16 +85,29 @@ input[type="number"] {
   transform: translate(3px, 3px);
 }
 
-/* Quieter card surface — same outline, smaller shadow, no lift. */
-.pop-card {
-  border: 3px solid var(--color-ink);
-  box-shadow: 3px 3px 0 0 var(--color-ink);
-  background: var(--color-paper-strong);
+/* Quieter card surface — same outline, smaller shadow, no lift.
+ * Wrapped in `:where()` AND declared inside `@layer utilities` so the
+ * entire rule has zero specificity AND lives alongside Tailwind's
+ * utility classes. Either alone is insufficient: an unlayered
+ * `:where()` rule beats layered utilities by cascade rules
+ * (unlayered wins regardless of specificity); a layered `:where()`
+ * with the same layer as Tailwind drops back to a true specificity
+ * fight, which `:where()` always loses. The combo means any
+ * `bg-*` / `border-*` / `shadow-*` utility placed alongside
+ * `pop-card` (e.g. `pop-card bg-ink` for an inverted "active" tab)
+ * overrides automatically. */
+@layer utilities {
+  :where(.pop-card) {
+    border: 3px solid var(--color-ink);
+    box-shadow: 3px 3px 0 0 var(--color-ink);
+    background-color: var(--color-paper-strong);
+  }
 }
 
 /* Static version of pop-block — same outline + offset shadow, but no
- * hover lift or active press. Use on large decorative frames (e.g. the
- * binder shell) where the whole-surface "press" looks wrong on click. */
+ * hover lift or active press. Use on large decorative frames (e.g.
+ * the binder shell) where the whole-surface "press" looks wrong on
+ * click. */
 .pop-static {
   border: 3px solid var(--color-ink);
   box-shadow: 4px 4px 0 0 var(--color-ink);
