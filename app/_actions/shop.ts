@@ -8,7 +8,6 @@ import type {
   LewisListing,
   LewisOrder,
   LewisOrderItem,
-  PaymentMethod,
   ShippingAddress,
   ShippingMethodOption,
 } from "@/lib/supabase/types";

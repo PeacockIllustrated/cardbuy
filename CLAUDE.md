@@ -165,22 +165,27 @@ See `SCHEMA.sql` for the target shape. Headline tables:
 
 ## 07 · Current phase
 
-**→ PHASE 5 · BRANDING** *(read `PHASE5_BRANDING.md`)*
+**→ PHASE 4 · SUBMISSION LIFECYCLE & PAYMENTS** *(prompt not yet written)*
 
-Phase 1 wireframe (incl. shopfront amendment) is signed off and feature-complete. Phase 5 was promoted ahead of Phases 2–4 by operator decision (2026-04-19) so Lewis sees the brand against the IA before data wiring locks in shapes.
+Phases 1, 2, 3, 5, 6, 7 are shipped. Supabase is wired, auth + RLS are live, TCGCSV price sync and the margin engine are functional, the binder and shop both read real data, and the pop-art brand is applied sitewide. The outstanding launch blocker is **Phase 4** — shipping label generation, Stripe in, PayPal Payouts out, transactional email, and the full order/submission state machine. Without it, checkout is stubbed (`CheckoutForm.tsx:73`) and submissions cannot be settled.
 
-Phase 5 applies a **pop-art brand system** (saturated 3-colour palette, chunky display sans, thick-outlined "sticker" cards) over the existing routes — no IA changes, no new pages. Mock data still backs everything; auth, real prices, and payments remain TODO.
+Parallel launch-readiness gaps (not strictly phase-scoped): legal pages (T&Cs, Privacy, Returns), GDPR delete-confirmation emails, cron-failure alerting, low-stock alerts, mobile QA pass.
 
 **Required reading at session start (in order):**
 1. This file (`CLAUDE.md`) — top to bottom.
-2. The active phase prompt (`PHASE5_BRANDING.md`) — top to bottom.
-3. `PHASE5_BRANDING_REFERENCES.md` — the inspiration captured before promotion.
-4. `PHASE1_WIREFRAME.md` (incl. mid-phase amendment) — the IA the brand is clothing.
+2. The most recent shipped phase prompts for context: `PHASE7_SHOP.md`, `PHASE6_BINDER.md`.
+3. `PHASE1_WIREFRAME.md` — the IA the brand is clothing.
+4. `PHASE5_BRANDING.md` + `PHASE5_BRANDING_REFERENCES.md` — brand system.
 
-Phases not yet started (still queued, in this order):
-- `PHASE2_DATA_LAYER.md` — Supabase schema, auth, API integrations, mock → real data swap
-- `PHASE3_PRICING_ENGINE.md` — margin dials, offer calculation, confidence scoring
-- `PHASE4_SUBMISSION_LIFECYCLE.md` — shipping labels, verification UI, PayPal payouts, Stripe in (not yet written)
+Shipped phases (reference only):
+- `PHASE1_WIREFRAME.md` — IA + grayscale scaffold
+- `PHASE2_DATA_LAYER.md` — Supabase schema, auth, RLS, TCGCSV sync
+- `PHASE3_PRICING_ENGINE.md` / `PHASE3_PRICING.md` — margin dials, offer calculation
+- `PHASE5_BRANDING.md` — pop-art brand system
+- `PHASE6_BINDER.md` — collector binder (auth-gated)
+- `PHASE7_SHOP.md` — shopfront with real listings + cart
+
+**Note on DB prefix:** CLAUDE.md §04 says `cb_` but the live schema uses `lewis_` (operator decision, captured in auto-memory). New SQL must use `lewis_`.
 
 ---
 

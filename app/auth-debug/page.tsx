@@ -73,7 +73,7 @@ role:   ${user.role ?? "(no supabase role)"}`}
           <pre style={err}>query error: {profileError}</pre>
         ) : !profileRow ? (
           <pre style={err}>
-NO ROW FOUND for id {user.id}
+{`NO ROW FOUND for id ${user.id}
 
 Causes:
 - The insert trigger on auth.users didn't fire (look in lewis_users
@@ -81,7 +81,7 @@ Causes:
 - RLS "lewis_users: self read" policy is missing or broken
   (auth.uid() = id should match).
 - You're signed into a different Supabase project than you ran the
-  UPDATE against.
+  UPDATE against.`}
           </pre>
         ) : (
           <pre style={ok}>{JSON.stringify(profileRow, null, 2)}</pre>
@@ -105,10 +105,10 @@ Causes:
           <pre style={err}>list error: {listError.message}</pre>
         ) : !allVisible || allVisible.length === 0 ? (
           <pre style={err}>
-RLS returned zero rows.
+{`RLS returned zero rows.
 
 If your own row is missing here, the "lewis_users: self read" policy
-is not matching. Check it in the Supabase dashboard.
+is not matching. Check it in the Supabase dashboard.`}
           </pre>
         ) : (
           <pre style={ok}>{JSON.stringify(allVisible, null, 2)}</pre>

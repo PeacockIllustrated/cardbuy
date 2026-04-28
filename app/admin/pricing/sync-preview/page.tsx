@@ -237,7 +237,7 @@ export default async function SyncPreviewPage() {
               </TR>
             </THead>
             <TBody>
-              {pricesSorted.slice(0, 60).map((price, i) => {
+              {pricesSorted.slice(0, 60).map((price) => {
                 const prod = productById.get(price.productId);
                 const num = prod ? productNumber(prod) : null;
                 const rarity = prod ? productRarity(prod) : null;

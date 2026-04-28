@@ -18,9 +18,29 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "cardbuy · buy & sell Pokémon cards",
+  title: {
+    default: "cardbuy · buy & sell Pokémon cards",
+    template: "%s · cardbuy",
+  },
   description:
     "Buy graded and raw Pokémon cards from a UK dealer, or sell yours for an instant GBP offer.",
+  applicationName: "cardbuy",
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    siteName: "cardbuy",
+    title: "cardbuy · buy & sell Pokémon cards",
+    description:
+      "Buy graded and raw Pokémon cards from a UK dealer, or sell yours for an instant GBP offer.",
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "cardbuy · buy & sell Pokémon cards",
+    description:
+      "Buy graded and raw Pokémon cards from a UK dealer, or sell yours for an instant GBP offer.",
+  },
+  formatDetection: { telephone: false, email: false, address: false },
 };
 
 export default function RootLayout({

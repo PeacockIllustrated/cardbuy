@@ -50,7 +50,6 @@ function buildBurstPoints(
 }
 
 const BURST_A = buildBurstPoints(10, 96, 52, 62);
-const BURST_B = buildBurstPoints(12, 94, 58, 66);
 const BURST_C = buildBurstPoints(8, 98, 48, 58);
 
 type BurstProps = {
