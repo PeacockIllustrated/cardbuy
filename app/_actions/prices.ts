@@ -35,6 +35,35 @@ export const getLatestPricesForCard = cache(
   },
 );
 
+/**
+ * Bulk reader for many cards in one round-trip — used by grid views
+ * (the /search tile overlay) so we don't fan out one Supabase query
+ * per card. Silently degrades to an empty Map on error so callers
+ * fall back to mock prices without breaking the page.
+ */
+export const getLatestPricesForCards = cache(
+  async (cardIds: string[]): Promise<Map<string, LivePriceRow[]>> => {
+    const result = new Map<string, LivePriceRow[]>();
+    if (cardIds.length === 0) return result;
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from("lewis_card_prices")
+        .select("*")
+        .in("card_id", cardIds);
+      if (error || !data) return result;
+      for (const row of data as LivePriceRow[]) {
+        const bucket = result.get(row.card_id);
+        if (bucket) bucket.push(row);
+        else result.set(row.card_id, [row]);
+      }
+      return result;
+    } catch {
+      return result;
+    }
+  },
+);
+
 export async function getRecentSyncRuns(
   limit = 8,
 ): Promise<SyncRunSummary[]> {

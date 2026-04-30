@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button, Input, Select, Field } from "@/components/ui/Form";
 import { CardImage } from "@/components/cardbuy/CardImage";
+import { CardValueOverlay } from "@/components/cardbuy/CardValueOverlay";
 import { EnergyChip } from "@/components/cardbuy/EnergyChip";
 import {
   getAllCards,
@@ -8,7 +9,13 @@ import {
   setIdOf,
   getSetsGroupedBySeries,
 } from "@/lib/fixtures/cards";
+import { getMockCardById } from "@/lib/fixtures/mock-adapter";
+import { computeMockOffer } from "@/lib/mock/mock-offer";
+import { getMarginConfig } from "@/app/_actions/margins";
+import { getLatestPricesForCards } from "@/app/_actions/prices";
+import { pickHeadlinePrice } from "@/lib/prices/types";
 import type { Card } from "@/lib/types/card";
+import type { Condition, MockCard } from "@/lib/mock/types";
 
 type SearchParams = Promise<{
   q?: string;
@@ -60,6 +67,51 @@ export default async function SearchPage({
 
   const activeSet = sp.set ? CARD_SETS.find((s) => s.id === sp.set) : undefined;
   const hasActiveFilter = Boolean(sp.set || sp.rarity || sp.supertype || sp.q);
+
+  // Compute headline NM-raw offers for the cards on this page so each
+  // tile can show "£X.XX" or a "NOT BUYING" stamp at a glance. Live
+  // TCGCSV prices override the synthetic mock baseline where available
+  // — same overlay pattern as the card detail page so grid ↔ detail
+  // stay consistent.
+  const [marginConfig, livePriceMap] = await Promise.all([
+    getMarginConfig(),
+    getLatestPricesForCards(paged.map((c) => c.id)),
+  ]);
+  const offerByCardId = new Map<
+    string,
+    { offerGbp: number; belowMin: boolean }
+  >();
+  for (const c of paged) {
+    const mockCard = getMockCardById(c.id);
+    if (!mockCard) continue;
+    const headline = pickHeadlinePrice(livePriceMap.get(c.id) ?? []);
+    const liveCard: MockCard = headline?.price_market
+      ? (() => {
+          const live = Number(headline.price_market);
+          const sale = marginConfig.confidence_threshold + 1;
+          const conds: Condition[] = ["NM", "LP", "MP", "HP", "DMG"];
+          const overridden = { ...mockCard.raw_prices };
+          for (const cond of conds) {
+            overridden[cond] = {
+              market: live,
+              low: Number(headline.price_low ?? live),
+              high: Number(headline.price_high ?? live),
+              sale_count: sale,
+            };
+          }
+          return { ...mockCard, raw_prices: overridden };
+        })()
+      : mockCard;
+    const offer = computeMockOffer(
+      liveCard,
+      { variant: "raw", condition: "NM" },
+      marginConfig,
+    );
+    offerByCardId.set(c.id, {
+      offerGbp: offer.offerGbp,
+      belowMin: offer.belowMin,
+    });
+  }
 
   return (
     <div className="max-w-[1300px] mx-auto px-5 md:px-4 py-6 md:py-8 flex flex-col gap-5">
@@ -241,18 +293,28 @@ export default async function SearchPage({
               className="cards-entrance grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
               key={`${sp.set ?? "all"}-${currentPage}`}
             >
-              {paged.map((card) => (
+              {paged.map((card) => {
+                const tileOffer = offerByCardId.get(card.id);
+                return (
                 <li key={card.id}>
                   <Link
                     href={`/card/${card.id}`}
                     className="group block pop-card rounded-md p-3 flex flex-col gap-2 transition-transform hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_var(--color-ink)]"
                   >
-                    <CardImage
-                      src={card.images.small}
-                      alt={card.name}
-                      size="md"
-                      rarity={card.rarity}
-                    />
+                    <div className="relative">
+                      <CardImage
+                        src={card.images.small}
+                        alt={card.name}
+                        size="md"
+                        rarity={card.rarity}
+                      />
+                      {tileOffer ? (
+                        <CardValueOverlay
+                          offerGbp={tileOffer.offerGbp}
+                          belowMin={tileOffer.belowMin}
+                        />
+                      ) : null}
+                    </div>
                     <div className="flex flex-col gap-1 pt-1">
                       <div className="font-display text-[13px] leading-tight line-clamp-2 min-h-[28px]">
                         {card.name}
@@ -275,7 +337,8 @@ export default async function SearchPage({
                     </span>
                   </Link>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
 
