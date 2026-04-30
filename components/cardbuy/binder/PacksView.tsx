@@ -41,6 +41,11 @@ import type {
 
 type Props = {
   packs: BinderPackSummary[];
+  /** Pack to auto-open when the view mounts, fed by the
+   *  `?pack=<setId>` URL search param so that deep-links from the
+   *  Regions binder's set-logo chip jump straight into the relevant
+   *  pack instead of dumping the user on the pack list. */
+  initialOpenSetId?: string | null;
 };
 
 const SLOTS_PER_PAGE = 9;
@@ -55,10 +60,10 @@ type FlipState = {
   to: number;
 };
 
-export function PacksView({ packs }: Props) {
+export function PacksView({ packs, initialOpenSetId = null }: Props) {
   // Drill state — null = browsing the pack list, otherwise viewing
   // the cards inside that pack.
-  const [openSetId, setOpenSetId] = useState<string | null>(null);
+  const [openSetId, setOpenSetId] = useState<string | null>(initialOpenSetId);
   const [packDetail, setPackDetail] = useState<PackDetailPayload | null>(null);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +79,25 @@ export function PacksView({ packs }: Props) {
         setError(e instanceof Error ? e.message : "Failed to load pack");
       }
     });
+  }, []);
+
+  // If we mounted with a pack pre-selected (deep-link), kick off the
+  // detail fetch directly. `openSetId` is already seeded synchronously
+  // from the prop in the useState initialiser above, so we only need
+  // to fetch the cards here — no further synchronous setState. We
+  // deliberately don't re-fire if `initialOpenSetId` later changes —
+  // a deep-link is a one-shot mount intent, not a controlled prop.
+  useEffect(() => {
+    if (!initialOpenSetId) return;
+    start(async () => {
+      try {
+        const result = await getPackCardsForUser(initialOpenSetId);
+        setPackDetail(result);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load pack");
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleClose = useCallback(() => {
@@ -1028,13 +1052,15 @@ function PackCardSlot({
       onClick={() => onClick(card.id)}
       aria-pressed={isLocked}
       aria-label={`${card.name} #${card.number}${card.owned ? "" : " — missing"}`}
-      className={`relative w-full aspect-[5/7] rounded-md p-1 ${
+      className={`relative w-full aspect-[5/7] rounded-md ${
         card.owned
           ? "bg-paper-strong border-[2px] border-ink/20"
           : "bg-paper/40 border-[2px] border-dashed border-ink/30"
       } ${ring}`}
     >
-      <div className={`relative h-full w-full ${card.owned ? "" : "opacity-30 grayscale"}`}>
+      <div
+        className={`relative h-full w-full flex items-center justify-center p-1 ${card.owned ? "" : "opacity-30 grayscale"}`}
+      >
         <CardImage
           src={card.imageSmall}
           alt={card.name}

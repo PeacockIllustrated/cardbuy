@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -74,6 +74,24 @@ const REGION_TABS: RegionDef[] = [
  * the fixture/dex registry and passes them in as plain data.
  * ───────────────────────────────────────────────────────────────── */
 
+/** Card detail payload — the print-specific data each carousel slide
+ *  in the owned-card preview pane needs to render its hero image and
+ *  the description / stats panel below. Mirrored on `BinderOwnedData`
+ *  for back-compat (`owned.card` = `owned.entries[0].card`). */
+export type BinderEntryCard = {
+  id: string;
+  setId: string;
+  name: string;
+  imageSmall: string | null;
+  setName: string;
+  setLogoUrl: string | null;
+  rarity: string | null;
+  cardNumber: string;
+  hp: string | null;
+  types: string[];
+  flavorText: string | null;
+};
+
 export type BinderOwnedEntry = {
   id: string;
   variant: "raw" | "graded";
@@ -86,20 +104,15 @@ export type BinderOwnedEntry = {
   acquired_at: string;
   setName: string;
   cardId: string;
+  /** Full card detail for this specific entry's print — drives the
+   *  per-slide hero image and the description/stats panel inside the
+   *  owned-card carousel. Optional for back-compat with any loader
+   *  that hasn't been updated yet. */
+  card?: BinderEntryCard;
 };
 
 export type BinderOwnedData = {
-  card: {
-    id: string;
-    name: string;
-    imageSmall: string | null;
-    setName: string;
-    rarity: string | null;
-    cardNumber: string;
-    hp: string | null;
-    types: string[];
-    flavorText: string | null;
-  };
+  card: BinderEntryCard;
   entries: BinderOwnedEntry[];
 };
 
@@ -156,9 +169,19 @@ export type BinderSlotPayload = {
   onWishlist: boolean;
   wishlistTargetGbp: number | null;
   /** Small image URL of the canonical dex-rep card. Used on missing
-   *  slots as a ghost silhouette so the user can see the shape of the
-   *  Pokémon they don't own yet. */
+   *  slots in the preview pane as a ghost silhouette so the user can
+   *  see the shape of the Pokémon they don't own yet. */
   silhouetteImage: string | null;
+  /** Vendored species silhouette PNG (`/silhouettes/{dex}.png`).
+   *  Used by the missing-slot grid tile, not the preview pane. Null
+   *  for dex numbers outside the vendored 1-1025 range. */
+  speciesSilhouette: string | null;
+  /** Vendored coloured species artwork PNG
+   *  (`/pokemon-artwork/{dex}.png`). Used by the OWNED grid tile in
+   *  place of the user's specific card art, so a slot identifies the
+   *  Pokémon by species rather than by the particular print they own.
+   *  Null for dex numbers outside the vendored 1-1025 range. */
+  speciesArtwork: string | null;
 };
 
 type Props = {
@@ -223,8 +246,39 @@ export function BinderPanel({
   // panel now derives both from the active region filter — page-level
   // counts would be wrong for Johto / Paldea / etc.
   const [region, setRegion] = useState<RegionId>("all");
+
+  // URL search params drive the surface-level state — `?view=packs`
+  // selects the packs surface, `?pack=<setId>` deep-links into a
+  // specific pack inside it. Initial state is read once from the
+  // URL so refreshes / shared links land on the same surface.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialView: BinderView =
+    searchParams.get("view") === "packs" ? "packs" : "regions";
+  const initialPack = searchParams.get("pack");
   // Top-level surface switch — the regions binder vs. the packs grid.
-  const [view, setView] = useState<BinderView>("regions");
+  const [view, setViewState] = useState<BinderView>(initialView);
+
+  // Sync URL when the user toggles between Regions / Packs internally
+  // so the URL stays a faithful representation of what they're seeing.
+  // We use replace (not push) for tab toggles to avoid polluting the
+  // back stack with every tab switch — the back button should jump
+  // back to where the user came from, not undo a tab toggle.
+  const setView = useCallback(
+    (next: BinderView) => {
+      setViewState(next);
+      const sp = new URLSearchParams(searchParams.toString());
+      if (next === "regions") {
+        sp.delete("view");
+        sp.delete("pack");
+      } else {
+        sp.set("view", "packs");
+      }
+      const qs = sp.toString();
+      router.replace(qs ? `/binder?${qs}` : "/binder");
+    },
+    [router, searchParams],
+  );
 
   /* ── Filtered slot list — dex numbers inside the active region ── */
   const filteredSlots = useMemo(() => {
@@ -468,7 +522,7 @@ export function BinderPanel({
       <ViewTabs active={view} onChange={setView} packCount={packs.length} />
 
       {view === "packs" ? (
-        <PacksView packs={packs} />
+        <PacksView packs={packs} initialOpenSetId={initialPack} />
       ) : (
         <RegionsBinder
           region={region}
@@ -1410,7 +1464,10 @@ function SlotDetails({
       ) : null}
 
       {owned ? (
-        <OwnedDetails owned={owned} />
+        // Key forces a fresh mount when the locked Pokémon changes,
+        // so the carousel resets to its first slide instead of
+        // carrying the previous slot's active index.
+        <OwnedDetails key={`owned-${slot.dexNumber}`} owned={owned} />
       ) : (
         <MissingDetails
           key={slot.wishlistCardId ?? `dex-${slot.dexNumber}`}
@@ -1428,6 +1485,328 @@ function SlotDetails({
   );
 }
 
+/**
+ * Owned-card carousel — horizontal rail of every print the user owns
+ * for the currently-locked Pokémon. The focused card sits centred and
+ * flat; non-active neighbours fan outwards (rotation + downscale) so
+ * the user can see at a glance that more cards are scrollable.
+ *
+ * Scroll-snap (CSS `scroll-snap-type: x mandatory` + per-slide
+ * `scroll-snap-align: center`) handles the smooth-scroll snap-to-card
+ * behaviour natively. Active-index tracking uses an
+ * IntersectionObserver scoped to the rail viewport: whichever slide
+ * has the highest intersection ratio is treated as the focused one.
+ *
+ * Each slide carries a clickable set-logo chip that deep-links to the
+ * Packs view → that pack's grid (via the `?view=packs&pack=<setId>`
+ * search params, lifted in BinderPanel).
+ */
+function OwnedCardRail({
+  entries,
+  fallbackCard,
+  activeIdx,
+  onActiveChange,
+  onSetClick,
+  hasGrail,
+}: {
+  entries: BinderOwnedEntry[];
+  fallbackCard: BinderEntryCard;
+  activeIdx: number;
+  onActiveChange: (idx: number) => void;
+  onSetClick: (setId: string) => void;
+  hasGrail: boolean;
+}) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const rafTick = useRef(false);
+  const lastIdx = useRef(activeIdx);
+
+  // Half-card padding for the rail's first/last slide centring.
+  // Hard-coded to 5.625rem (90px) because CardImage at size="md" is
+  // pinned to 180×250 by its DIMS table — any breakpoint-driven
+  // resize would need this to track. Used by the ResizeObserver
+  // effect below to compute the exact pixel padding off the rail's
+  // current clientWidth.
+  const HALF_CARD_PX = 90;
+
+  // Set the `--rail-pad` CSS variable to (railClientWidth/2 − halfCard)
+  // whenever the rail resizes. This pins the first / last slide's
+  // CENTRE to the rail viewport centre at scrollLeft 0 and max,
+  // matching the middle slides exactly. Percentage-based padding
+  // doesn't work here because the inner flex needs `w-max` to grow
+  // to its full intrinsic width (otherwise padding-inline-end gets
+  // clipped from scrollWidth), and percentages then resolve against
+  // the wrong containing block.
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const apply = () => {
+      const pad = Math.max(0, rail.clientWidth / 2 - HALF_CARD_PX);
+      rail.style.setProperty("--rail-pad", `${pad}px`);
+    };
+    apply();
+    const obs = new ResizeObserver(apply);
+    obs.observe(rail);
+    return () => obs.disconnect();
+  }, []);
+
+  // Track the active slide via scroll-position math — much steadier
+  // than IntersectionObserver during scroll-snap settle, where
+  // bucketed thresholds fire unevenly and cause the fan to chatter.
+  // On every scroll frame we compute which slide's CENTRE is closest
+  // to the rail's centre, throttled with rAF so we update at most
+  // once per paint. Only emits a state change when the index
+  // actually moves, to avoid useless re-renders.
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+
+    const measure = () => {
+      const center = rail.scrollLeft + rail.clientWidth / 2;
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      const slides = slideRefs.current;
+      for (let i = 0; i < slides.length; i++) {
+        const el = slides[i];
+        if (!el) continue;
+        const slideCenter = el.offsetLeft + el.offsetWidth / 2;
+        const d = Math.abs(slideCenter - center);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = i;
+        }
+      }
+      if (bestIdx !== lastIdx.current) {
+        lastIdx.current = bestIdx;
+        onActiveChange(bestIdx);
+      }
+    };
+
+    const onScroll = () => {
+      if (rafTick.current) return;
+      rafTick.current = true;
+      requestAnimationFrame(() => {
+        measure();
+        rafTick.current = false;
+      });
+    };
+
+    rail.addEventListener("scroll", onScroll, { passive: true });
+    // Run once on mount so the active index is correct after layout
+    // settles (covers the initial scroll position too).
+    measure();
+    return () => rail.removeEventListener("scroll", onScroll);
+  }, [entries.length, onActiveChange]);
+
+  // Smooth-scroll helper used by the prev/next ghost buttons and the
+  // slide click handler. Native scrollIntoView with inline: 'center'
+  // delegates the snap maths to the browser.
+  const scrollTo = useCallback((idx: number) => {
+    const el = slideRefs.current[idx];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, []);
+
+  const onlyOne = entries.length <= 1;
+  const canPrev = activeIdx > 0;
+  const canNext = activeIdx < entries.length - 1;
+
+  return (
+    // Negative horizontal margins bleed the rail past the slot
+    // details pane padding (`p-4 md:p-6` on the parent <section>) so
+    // the fanned cards reach the edge of the binder pane instead of
+    // clipping at the inner content box. The viewport handles the
+    // x-axis clipping itself, and scroll-snap maths is unaffected
+    // because the inner padding is expressed as a percentage.
+    <div className="relative mt-4 -mx-4 md:-mx-6">
+      {/* Rail viewport. overflow-x-auto exposes a horizontal
+          scroll surface; scroll-snap centres each slide on release.
+          Vertical padding leaves room for the rotated peek cards
+          to clip cleanly without bumping the meta grid below. */}
+      <div
+        ref={railRef}
+        className="overflow-x-auto overflow-y-visible scrollbar-none"
+        style={{
+          scrollSnapType: "x mandatory",
+          scrollBehavior: "smooth",
+          // Mirror the inner padding so the snap target's centre is
+          // computed against the same anchor as the visual centre —
+          // every slide (first / last / middle) settles at exactly
+          // the same X. The variable is set by the ResizeObserver
+          // effect on this element.
+          scrollPaddingInline: "var(--rail-pad, calc(50vw - 5.625rem))",
+        }}
+        aria-label="Your cards for this Pokémon"
+      >
+        <div
+          // Side-padding = (rail width / 2) − (half card width).
+          // The exact pixel value is set at runtime via the
+          // `--rail-pad` CSS variable on the rail element below
+          // (see the ResizeObserver effect above) — percentages
+          // can't be used reliably here because (a) `padding-inline-end`
+          // gets clipped from `scrollWidth` when the flex overflows
+          // its parent, breaking last-slide centring, and (b) using
+          // `w-max` to fix that defeats percentages. The variable
+          // approach pins padding to the rail's actual clientWidth.
+          className="flex items-center gap-3 py-6 w-max"
+          style={{
+            paddingInline: "var(--rail-pad, calc(50vw - 5.625rem))",
+          }}
+        >
+          {entries.map((e, i) => {
+            const c = e.card ?? fallbackCard;
+            const isActive = i === activeIdx;
+            const offset = i - activeIdx;
+            // Cards before the active one lean anticlockwise; cards
+            // after lean clockwise. Rotation magnitude grows with
+            // distance so the deck reads as a fan rather than a stack
+            // of straight rectangles. Capped at ±12° so distant cards
+            // don't disappear into the rail edge.
+            const rot = isActive
+              ? 0
+              : Math.max(-12, Math.min(12, offset * 6));
+            const scale = isActive ? 1 : 0.92;
+            const isThisGrail = hasGrail && e.is_grail;
+            // The slide is a div (not a button) so the inner set-logo
+            // <button> can render without the nested-interactive
+            // hydration error. Click + keyboard activation are wired
+            // explicitly to keep the affordance.
+            return (
+              <div
+                key={e.id}
+                ref={(el) => {
+                  slideRefs.current[i] = el;
+                }}
+                data-idx={i}
+                role="button"
+                tabIndex={isActive ? 0 : -1}
+                aria-label={`Show ${c.setName} #${c.cardNumber}`}
+                aria-pressed={isActive}
+                onClick={() => scrollTo(i)}
+                onKeyDown={(ev) => {
+                  if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    scrollTo(i);
+                  }
+                }}
+                // Snappy 150ms transition — long enough to read as
+                // motion, short enough that fast scrolls don't leave
+                // the fan trailing behind the snap. will-change keeps
+                // each slide on its own GPU layer to avoid jank.
+                className="flex-none transition-transform duration-150 ease-out cursor-pointer focus:outline-none"
+                style={{
+                  scrollSnapAlign: "center",
+                  transform: `rotate(${rot}deg) scale(${scale})`,
+                  transformOrigin: "center bottom",
+                  opacity: isActive ? 1 : 0.78,
+                  willChange: "transform",
+                }}
+              >
+                <div className="relative">
+                  <CardImage
+                    src={c.imageSmall}
+                    alt={c.name}
+                    size="md"
+                    rarity={c.rarity ?? undefined}
+                    // Only the focused slide carries the 3D tilt
+                    // hover effect — non-active fanned neighbours are
+                    // visually suppressed (rotated + downscaled) and
+                    // hovering them shouldn't add a second tilt that
+                    // fights the rotation.
+                    interactive={isActive}
+                    hideBadge
+                  />
+                  {/* Per-slide grail star — only on the slide that
+                      represents the grail entry, not every card. */}
+                  {isThisGrail ? (
+                    <span
+                      className="absolute -top-2 -right-2 z-[5] w-7 h-7 grid place-items-center rounded-full bg-yellow border-2 border-ink font-display text-[13px] pointer-events-none"
+                      aria-label="Grail"
+                    >
+                      ★
+                    </span>
+                  ) : null}
+                  {/* Set-logo chip — clickable, deep-links to the
+                      Packs view for this slide's set. Only rendered
+                      on the active slide so non-focused fanned cards
+                      don't visually clutter the rail with chips.
+                      stopPropagation prevents the slide click handler
+                      from also firing (which would just scroll-to
+                      the same slide, harmless but wasteful). */}
+                  {isActive && c.setLogoUrl ? (
+                    <button
+                      type="button"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        onSetClick(c.setId);
+                      }}
+                      title={`Open ${c.setName} pack`}
+                      aria-label={`Open ${c.setName} pack`}
+                      className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-[6] h-8 px-2 bg-paper-strong border-2 border-ink rounded-sm shadow-[2px_2px_0_0_var(--color-ink)] grid place-items-center hover:translate-y-[-1px] hover:shadow-[3px_3px_0_0_var(--color-ink)] active:translate-y-[1px] active:shadow-[1px_1px_0_0_var(--color-ink)]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={c.setLogoUrl}
+                        alt=""
+                        className="max-h-5 max-w-[64px] object-contain"
+                      />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Ghost prev / next buttons — only visible when there's
+          somewhere to scroll. Sit absolutely so they don't reflow
+          the rail. Hidden entirely on single-card slots since the
+          rail collapses to one slide. */}
+      {!onlyOne ? (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollTo(Math.max(0, activeIdx - 1))}
+            disabled={!canPrev}
+            aria-label="Previous card"
+            className="absolute left-1 top-1/2 -translate-y-1/2 z-[7] w-8 h-8 grid place-items-center rounded-full bg-paper-strong/90 border-2 border-ink font-display text-[14px] disabled:opacity-30 disabled:pointer-events-none hover:bg-paper-strong"
+          >
+            ◀
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollTo(Math.min(entries.length - 1, activeIdx + 1))}
+            disabled={!canNext}
+            aria-label="Next card"
+            className="absolute right-1 top-1/2 -translate-y-1/2 z-[7] w-8 h-8 grid place-items-center rounded-full bg-paper-strong/90 border-2 border-ink font-display text-[14px] disabled:opacity-30 disabled:pointer-events-none hover:bg-paper-strong"
+          >
+            ▶
+          </button>
+          {/* Position pip row — small dots underneath, tabular feel.
+              Tells the user where they are without reading the rail. */}
+          <div className="mt-1 flex items-center justify-center gap-1.5">
+            {entries.map((e, i) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => scrollTo(i)}
+                aria-label={`Card ${i + 1} of ${entries.length}`}
+                aria-current={i === activeIdx}
+                className={`h-1.5 rounded-full border border-ink transition-all ${
+                  i === activeIdx
+                    ? "w-4 bg-ink"
+                    : "w-1.5 bg-paper-strong hover:bg-ink/30"
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 function OwnedDetails({ owned }: { owned: BinderOwnedData }) {
   const { card, entries } = owned;
   const totalCopies = entries.reduce((a, e) => a + e.quantity, 0);
@@ -1438,6 +1817,22 @@ function OwnedDetails({ owned }: { owned: BinderOwnedData }) {
   const [addOpen, setAddOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Active carousel index — the slide currently snapped to centre.
+  // Drives the meta panel, flavor text, and the cardId for action
+  // buttons (sell / add / scan). Resets to 0 on slot change because
+  // OwnedDetails is keyed on dex number from its parent.
+  const [activeIdx, setActiveIdx] = useState(0);
+  const activeEntry = entries[activeIdx] ?? entries[0];
+  const activeCard = activeEntry?.card ?? card;
+
+  const openPack = useCallback(
+    (setId: string) => {
+      const sp = new URLSearchParams({ view: "packs", pack: setId });
+      router.push(`/binder?${sp.toString()}`);
+    },
+    [router],
+  );
 
   const handleToggleGrail = () => {
     setError(null);
@@ -1470,11 +1865,14 @@ function OwnedDetails({ owned }: { owned: BinderOwnedData }) {
   };
 
   const handleSell = () => {
-    // Prefer the grail copy if one exists (users likely want to sell the
-    // "best" copy when multiple exist), otherwise the first entry.
-    const target = entries.find((e) => e.is_grail) ?? entries[0];
+    // Sell the print currently focused in the carousel — the user is
+    // looking at it, so default the prefill to its variant/condition.
+    // Falls back to grail-or-first if the active entry's resolution
+    // failed (shouldn't happen, but kept defensive).
+    const target =
+      activeEntry ?? entries.find((e) => e.is_grail) ?? entries[0];
     if (!target) {
-      router.push(`/card/${card.id}`);
+      router.push(`/card/${activeCard.id}`);
       return;
     }
     const sp = new URLSearchParams({ prefill_variant: target.variant });
@@ -1485,7 +1883,7 @@ function OwnedDetails({ owned }: { owned: BinderOwnedData }) {
         sp.set("prefill_company", target.grading_company);
       if (target.grade) sp.set("prefill_grade", target.grade);
     }
-    router.push(`/card/${card.id}?${sp.toString()}`);
+    router.push(`/card/${activeCard.id}?${sp.toString()}`);
   };
 
   const handleAdd = (input: AddEntryFormResult) => {
@@ -1493,7 +1891,7 @@ function OwnedDetails({ owned }: { owned: BinderOwnedData }) {
     start(async () => {
       try {
         await addBinderEntry({
-          cardId: card.id,
+          cardId: activeCard.id,
           variant: input.variant,
           condition: input.condition,
           gradingCompany: input.gradingCompany,
@@ -1509,57 +1907,51 @@ function OwnedDetails({ owned }: { owned: BinderOwnedData }) {
 
   return (
     <>
-      {/* Hero card image */}
-      <div className="mt-4 flex justify-center">
-        <div className="relative">
-          <CardImage
-            src={card.imageSmall}
-            alt={card.name}
-            size="md"
-            rarity={card.rarity ?? undefined}
-            interactive
-            hideBadge
-          />
-          {hasGrail ? (
-            <span
-              className="absolute -top-2 -right-2 z-[5] w-7 h-7 grid place-items-center rounded-full bg-yellow border-2 border-ink font-display text-[13px]"
-              aria-label="Grail"
-            >
-              ★
-            </span>
-          ) : null}
-        </div>
-      </div>
+      {/* Owned-card carousel — horizontal rail of every print the user
+          owns for this Pokémon, fanned with rotation so the focused
+          card sits flat and its neighbours lean away. Scroll-snaps to
+          centre. Single-card slots collapse to the same visual as the
+          old static hero (no fan because there are no neighbours). */}
+      <OwnedCardRail
+        entries={entries}
+        fallbackCard={card}
+        activeIdx={activeIdx}
+        onActiveChange={setActiveIdx}
+        onSetClick={openPack}
+        hasGrail={hasGrail}
+      />
 
-      {/* Meta grid */}
+      {/* Meta grid — driven by the focused carousel slide so the user
+          sees stats for the print they're looking at, not the first
+          one. */}
       <div className="mt-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[11px] text-secondary">
         <span className="font-display text-[10px] tracking-wider text-muted">
           Set
         </span>
         <span className="text-ink">
-          {card.setName} · #{card.cardNumber}
+          {activeCard.setName} · #{activeCard.cardNumber}
         </span>
-        {card.hp ? (
+        {activeCard.hp ? (
           <>
             <span className="font-display text-[10px] tracking-wider text-muted">
               HP
             </span>
-            <span className="text-ink tabular-nums">{card.hp}</span>
+            <span className="text-ink tabular-nums">{activeCard.hp}</span>
           </>
         ) : null}
-        {card.rarity ? (
+        {activeCard.rarity ? (
           <>
             <span className="font-display text-[10px] tracking-wider text-muted">
               Rarity
             </span>
-            <span className="text-ink">{card.rarity}</span>
+            <span className="text-ink">{activeCard.rarity}</span>
           </>
         ) : null}
       </div>
 
-      {card.flavorText ? (
+      {activeCard.flavorText ? (
         <p className="mt-4 text-[12px] leading-relaxed italic text-secondary border-l-[3px] border-ink/20 pl-3">
-          {card.flavorText}
+          {activeCard.flavorText}
         </p>
       ) : null}
 
@@ -1688,8 +2080,8 @@ function OwnedDetails({ owned }: { owned: BinderOwnedData }) {
 
       {scannerOpen ? (
         <GradedCardScanner
-          cardId={card.id}
-          cardName={card.name}
+          cardId={activeCard.id}
+          cardName={activeCard.name}
           onClose={() => setScannerOpen(false)}
         />
       ) : null}
@@ -2217,6 +2609,7 @@ function DexSlot({
           dexLabel={dexLabel}
           name={slot.dexName}
           wishlisted={slot.onWishlist}
+          silhouette={slot.speciesSilhouette}
         />
       )}
     </button>
@@ -2240,42 +2633,66 @@ function OwnedSlotVisual({
       : firstEntry.condition ?? "";
   const multi = owned.entries.length > 1 || firstEntry.quantity > 1;
 
+  // Mirror the missing-slot layout for visual parity: top 2/3 carries
+  // the species artwork, bottom 1/3 is a hairline-bordered caption
+  // strip with the dex number and Pokémon name. Owned slots add the
+  // tag / multi / grail chips as overlays on top.
   return (
-    <>
-      <div
-        aria-hidden
-        className="absolute inset-0 rounded-md bg-paper/40"
-        style={{ boxShadow: "inset 0 0 0 2px rgba(10,10,10,0.1)" }}
-      />
-      <div className="relative h-full w-full flex items-center justify-center p-1">
-        <CardImage
-          src={owned.card.imageSmall}
-          alt={owned.card.name}
-          size="sm"
-          rarity={owned.card.rarity ?? undefined}
-          interactive
-          hideBadge
-        />
+    <div className="absolute inset-0 rounded-md bg-paper/40 overflow-hidden flex flex-col" style={{ boxShadow: "inset 0 0 0 2px rgba(10,10,10,0.1)" }}>
+      {/* Species artwork — the coloured Sugimori PNG vendored at
+          /public/pokemon-artwork/. Falls back to the original card
+          art for dex outside 1-1025 (currently never, kept defensive). */}
+      <div className="relative basis-2/3 grow-0 shrink-0 flex items-center justify-center px-2 pt-2 pb-1">
+        {slot.speciesArtwork ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={slot.speciesArtwork}
+            alt={owned.card.name}
+            className="max-w-full max-h-full object-contain drop-shadow-[1px_2px_0_rgba(10,10,10,0.18)]"
+          />
+        ) : (
+          <CardImage
+            src={owned.card.imageSmall}
+            alt={owned.card.name}
+            size="sm"
+            rarity={owned.card.rarity ?? undefined}
+            interactive
+            hideBadge
+          />
+        )}
       </div>
+      {/* Caption strip — same geometry as the missing-slot tile so the
+          two states read as the same component, just owned-vs-not. The
+          multi (`+N`) chip rides the right edge of this strip when the
+          user owns more than one print. */}
+      <div className="basis-1/3 grow shrink-0 relative flex flex-col items-center justify-center gap-0.5 px-1 pb-1 border-t border-ink/15 bg-paper/40">
+        <div className="font-display text-[14px] md:text-[16px] tabular-nums text-ink/80 leading-none">
+          {dexLabel}
+        </div>
+        <div className="font-display text-[9px] md:text-[10px] tracking-wider text-ink/70 uppercase text-center line-clamp-1">
+          {owned.card.name}
+        </div>
+        {multi ? (
+          <span className="absolute right-1 top-1 z-[4] bg-teal border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider pointer-events-none tabular-nums rounded-sm leading-none">
+            +{owned.entries.length > 1 ? owned.entries.length : firstEntry.quantity}
+          </span>
+        ) : null}
+      </div>
+      {/* Print-specific overlays — condition / grade chip top-left,
+          grail star top-right. Tucked INSIDE the bounds (1px inset)
+          so the wrapper's overflow-hidden + rounded corners don't
+          clip them. */}
       {tag ? (
-        <span className="absolute -top-1 -left-1 z-[4] bg-paper-strong border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider pointer-events-none rounded-sm">
+        <span className="absolute top-1 left-1 z-[4] bg-paper-strong border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider pointer-events-none rounded-sm leading-none">
           {tag}
         </span>
       ) : null}
-      {multi ? (
-        <span className="absolute -bottom-1 -right-1 z-[4] bg-teal border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider pointer-events-none tabular-nums rounded-sm">
-          +{owned.entries.length > 1 ? owned.entries.length : firstEntry.quantity}
-        </span>
-      ) : null}
       {grailed ? (
-        <span className="absolute -top-2 -right-2 z-[5] w-6 h-6 grid place-items-center rounded-full bg-yellow border-2 border-ink font-display text-[12px] pointer-events-none">
+        <span className="absolute top-1 right-1 z-[5] w-6 h-6 grid place-items-center rounded-full bg-yellow border-2 border-ink font-display text-[12px] pointer-events-none">
           ★
         </span>
       ) : null}
-      <span className="absolute left-1 bottom-1 z-[4] font-display text-[8.5px] tabular-nums text-ink/55 tracking-wider pointer-events-none">
-        {dexLabel}
-      </span>
-    </>
+    </div>
   );
 }
 
@@ -2283,18 +2700,37 @@ function MissingSlotVisual({
   dexLabel,
   name,
   wishlisted,
+  silhouette,
 }: {
   dexLabel: string;
   name: string;
   wishlisted: boolean;
+  silhouette: string | null;
 }) {
   return (
-    <div className="absolute inset-0 rounded-md border-[2px] border-dashed border-ink/30 bg-paper/60 overflow-hidden flex flex-col items-center justify-center gap-1">
-      <div className="font-display text-[22px] md:text-[26px] tabular-nums text-ink/30 leading-none">
-        {dexLabel}
+    <div className="absolute inset-0 rounded-md border-[2px] border-dashed border-ink/30 bg-paper/60 overflow-hidden flex flex-col">
+      {/* Silhouette panel — top 66% of the card. Black species shape on
+          a faintly tinted ground so the silhouette reads cleanly even
+          on light backgrounds. */}
+      <div className="relative basis-2/3 grow-0 shrink-0 flex items-center justify-center px-2 pt-2 pb-1">
+        {silhouette ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={silhouette}
+            alt=""
+            aria-hidden
+            className="max-w-full max-h-full object-contain opacity-80"
+          />
+        ) : null}
       </div>
-      <div className="font-display text-[10px] tracking-wider text-ink/40 uppercase px-1 text-center line-clamp-1">
-        {name}
+      {/* Caption — dex number + species name. Bottom 34%. */}
+      <div className="basis-1/3 grow shrink-0 flex flex-col items-center justify-center gap-0.5 px-1 pb-1 border-t border-ink/15 bg-paper/40">
+        <div className="font-display text-[14px] md:text-[16px] tabular-nums text-ink/60 leading-none">
+          {dexLabel}
+        </div>
+        <div className="font-display text-[9px] md:text-[10px] tracking-wider text-ink/55 uppercase text-center line-clamp-1">
+          {name}
+        </div>
       </div>
       {/* Wishlist heart — pink to differentiate from the gold Grail
           star on owned slots. Positioned INSIDE the slot bounds so it
