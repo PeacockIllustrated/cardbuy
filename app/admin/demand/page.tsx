@@ -8,7 +8,7 @@ import { formatGBP } from "@/lib/mock/mock-offer";
 /**
  * `/admin/demand` · Phase 6 · Slice B1.
  *
- * Aggregates every `lewis_wishlist_entries` row by card_id so Lewis can
+ * Aggregates every `lewis_wishlist_entries` row by card_id so Aqua TCG can
  * see which cards have latent buyer demand. Cross-user visibility comes
  * from the `lewis_wishlist_entries: admin read` RLS policy shipped in
  * migration 0006. Middleware role-gates the `/admin/*` tree.
@@ -32,18 +32,18 @@ export default async function AdminDemandPage() {
           { label: "Demand" },
         ]}
         title="Wishlist demand"
-        kicker={{ label: "AGGREGATE", tone: "pink" }}
+        kicker={{ label: "AGGREGATE", tone: "ocean" }}
         subtitle="Every wishlist row across the user base, grouped by card. Prioritise sourcing, ping sellers, or spot in-stock cards with latent buyers."
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Unique cards" value={uniqueCards} />
         <StatCard label="Total wishes" value={totalWishes} />
-        <StatCard label="In stock + wished" value={actionable} tone="teal" />
+        <StatCard label="In stock + wished" value={actionable} tone="wave" />
         <StatCard
           label="Missed demand"
           value={uniqueCards - actionable}
-          tone="pink"
+          tone="ocean"
           sub="No stock to meet"
         />
       </div>
@@ -80,7 +80,7 @@ export default async function AdminDemandPage() {
                   <TD>
                     <Link
                       href={`/admin/demand/${r.card_id}`}
-                      className="flex flex-col gap-0.5 hover:text-pink"
+                      className="flex flex-col gap-0.5 hover:text-ocean"
                     >
                       <span className="font-display text-[12px] tracking-wider">
                         {r.card_name}
@@ -139,7 +139,7 @@ export default async function AdminDemandPage() {
 /* ─────────────────────────────────────────────────────────────────
  * Signal classification
  *
- * Quick visual cue — what should Lewis do about this row?
+ * Quick visual cue — what should Aqua TCG do about this row?
  *   • "Convert"  → in stock AND at least one target price meets lowest listed
  *   • "List it"  → no stock; target price exists, it's sourcing-worth
  *   • "Surface"  → in stock, no target prices; DM-worthy
@@ -151,7 +151,7 @@ function classifyDemand(row: {
   targets_set: number;
   max_target_gbp: number | null;
   lowest_listed_gbp: number | null;
-}): { label: string; tone: "teal" | "pink" | "yellow" | "muted" } {
+}): { label: string; tone: "wave" | "ocean" | "sun" | "muted" } {
   const hasStock = row.current_in_stock > 0;
   const hasTarget = row.targets_set > 0;
   const targetMet =
@@ -161,9 +161,9 @@ function classifyDemand(row: {
     row.lowest_listed_gbp !== null &&
     row.max_target_gbp >= row.lowest_listed_gbp;
 
-  if (targetMet) return { label: "Convert", tone: "teal" };
-  if (hasStock) return { label: "Surface", tone: "yellow" };
-  if (hasTarget) return { label: "List it", tone: "pink" };
+  if (targetMet) return { label: "Convert", tone: "wave" };
+  if (hasStock) return { label: "Surface", tone: "sun" };
+  if (hasTarget) return { label: "List it", tone: "ocean" };
   return { label: "Watch", tone: "muted" };
 }
 
@@ -172,15 +172,15 @@ function SignalBadge({
   tone,
 }: {
   children: React.ReactNode;
-  tone: "teal" | "pink" | "yellow" | "muted";
+  tone: "wave" | "ocean" | "sun" | "muted";
 }) {
   const bg =
-    tone === "teal"
-      ? "bg-teal"
-      : tone === "pink"
-        ? "bg-pink"
-        : tone === "yellow"
-          ? "bg-yellow"
+    tone === "wave"
+      ? "bg-wave"
+      : tone === "ocean"
+        ? "bg-ocean"
+        : tone === "sun"
+          ? "bg-sun"
           : "bg-paper";
   const textColor = tone === "muted" ? "text-muted" : "text-ink";
   return (

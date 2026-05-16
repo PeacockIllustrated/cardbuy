@@ -74,7 +74,7 @@ export default async function AdminCardsPage({
           { label: "Cards" },
         ]}
         title="Card catalogue"
-        kicker={{ label: `SYNCED ${LAST_SYNCED}`, tone: "teal" }}
+        kicker={{ label: `SYNCED ${LAST_SYNCED}`, tone: "wave" }}
         subtitle="The full Pokémon TCG catalogue with live market prices pulled from TCGCSV."
         actions={
           <>
@@ -168,7 +168,7 @@ export default async function AdminCardsPage({
           {hasFilter ? (
             <Link
               href="/admin/cards"
-              className="border-2 border-ink rounded-md bg-paper-strong text-ink px-3 py-2 font-display text-[11px] tracking-wider uppercase hover:bg-yellow"
+              className="border-2 border-ink rounded-md bg-paper-strong text-ink px-3 py-2 font-display text-[11px] tracking-wider uppercase hover:bg-sun"
             >
               Clear
             </Link>
@@ -180,7 +180,7 @@ export default async function AdminCardsPage({
             <span className="font-display text-[10px] tracking-[0.2em] uppercase text-muted">
               Active
             </span>
-            <span className="inline-flex items-center gap-2 bg-pink text-ink border-2 border-ink rounded-md px-2 py-1 font-display text-[11px] tracking-wider">
+            <span className="inline-flex items-center gap-2 bg-ocean text-ink border-2 border-ink rounded-md px-2 py-1 font-display text-[11px] tracking-wider">
               {activeSet.symbolUrl ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -232,7 +232,7 @@ export default async function AdminCardsPage({
                 <TD>
                   <Link
                     href={`/card/${card.id}`}
-                    className="font-display tracking-tight text-[13px] hover:text-pink"
+                    className="font-display tracking-tight text-[13px] hover:text-ocean"
                   >
                     {card.name}
                   </Link>
@@ -273,7 +273,7 @@ export default async function AdminCardsPage({
             href={`/admin/cards${qs({ ...sp, page: String(Math.max(1, currentPage - 1)) })}`}
             aria-disabled={currentPage <= 1}
             className={`border-2 border-ink rounded-sm px-3 py-1.5 font-display text-[11px] tracking-wider ${
-              currentPage <= 1 ? "text-muted border-rule pointer-events-none" : "hover:bg-yellow"
+              currentPage <= 1 ? "text-muted border-rule pointer-events-none" : "hover:bg-sun"
             }`}
           >
             ← PREV
@@ -285,7 +285,7 @@ export default async function AdminCardsPage({
             href={`/admin/cards${qs({ ...sp, page: String(Math.min(pageCount, currentPage + 1)) })}`}
             aria-disabled={currentPage >= pageCount}
             className={`border-2 border-ink rounded-sm px-3 py-1.5 font-display text-[11px] tracking-wider ${
-              currentPage >= pageCount ? "text-muted border-rule pointer-events-none" : "hover:bg-yellow"
+              currentPage >= pageCount ? "text-muted border-rule pointer-events-none" : "hover:bg-sun"
             }`}
           >
             NEXT →

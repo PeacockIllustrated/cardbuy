@@ -34,7 +34,7 @@ export default async function AdminOrderDetailPage({
   return (
     <div className="px-4 py-6 max-w-[1100px] mx-auto flex flex-col gap-6">
       <nav className="text-[12px] font-display tracking-wider text-muted">
-        <Link href="/admin/orders" className="hover:text-pink">
+        <Link href="/admin/orders" className="hover:text-ocean">
           ← Orders
         </Link>
       </nav>
@@ -49,12 +49,12 @@ export default async function AdminOrderDetailPage({
             {STATUS_LABELS[order.status]}
           </span>
           {order.payment_method === "stub" ? (
-            <span className="font-display text-[10px] tracking-wider border-2 border-ink rounded-sm px-2 py-0.5 bg-pink">
+            <span className="font-display text-[10px] tracking-wider border-2 border-ink rounded-sm px-2 py-0.5 bg-ocean">
               STUB PAYMENT
             </span>
           ) : null}
           {order.add_to_binder_opt_in ? (
-            <span className="font-display text-[10px] tracking-wider border-2 border-ink rounded-sm px-2 py-0.5 bg-teal">
+            <span className="font-display text-[10px] tracking-wider border-2 border-ink rounded-sm px-2 py-0.5 bg-wave">
               BINDER OPT-IN
             </span>
           ) : null}
@@ -77,7 +77,7 @@ export default async function AdminOrderDetailPage({
           {buyer ? (
             <Link
               href={`/admin/users#${buyer.id}`}
-              className="text-[11px] font-display tracking-wider text-pink underline underline-offset-2 decoration-2 self-start"
+              className="text-[11px] font-display tracking-wider text-ocean underline underline-offset-2 decoration-2 self-start"
             >
               Open buyer profile →
             </Link>

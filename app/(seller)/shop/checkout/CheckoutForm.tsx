@@ -272,7 +272,7 @@ export function CheckoutForm({
                 return (
                   <label
                     key={method}
-                    className="flex items-center justify-between gap-2 border-2 border-ink rounded-md p-3 bg-paper-strong hover:bg-yellow/20 cursor-pointer tabular-nums"
+                    className="flex items-center justify-between gap-2 border-2 border-ink rounded-md p-3 bg-paper-strong hover:bg-sun/20 cursor-pointer tabular-nums"
                   >
                     <span className="flex items-center gap-2">
                       <input
@@ -301,7 +301,7 @@ export function CheckoutForm({
             </div>
             <p className="text-[12px] text-secondary">
               We&rsquo;re finishing the payment integration. For now,
-              placing this order sends it straight to Lewis — you&rsquo;ll
+              placing this order sends it straight to Aqua TCG — you&rsquo;ll
               receive an email when payment capture is ready.
             </p>
           </div>
@@ -334,7 +334,7 @@ export function CheckoutForm({
             <span>
               I agree to the{" "}
               <Link href="#" className="underline">
-                cardbuy buyer terms
+                Aqua TCG buyer terms
               </Link>{" "}
               and consent to my address being used for shipping.
             </span>
@@ -386,7 +386,7 @@ export function CheckoutForm({
         </div>
         <Link
           href="/shop/cart"
-          className="text-[11px] font-display tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-pink"
+          className="text-[11px] font-display tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-ocean"
         >
           ← back to basket
         </Link>

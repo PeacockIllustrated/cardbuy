@@ -32,7 +32,7 @@ export function PriceSourceChip({
 }: Props) {
   if (status === "live") {
     return (
-      <div className="pop-card rounded-sm bg-teal/30 px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
+      <div className="pop-card rounded-sm bg-wave/30 px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="font-display text-[9px] tracking-[0.25em] bg-ink text-paper-strong px-1.5 py-0.5 rounded-sm">
             LIVE
@@ -59,7 +59,7 @@ export function PriceSourceChip({
   return (
     <div
       className={`pop-card rounded-sm px-3 py-2 flex items-center justify-between gap-3 flex-wrap ${
-        adminUnmappedHint ? "bg-warn/10" : "bg-yellow/20"
+        adminUnmappedHint ? "bg-warn/10" : "bg-sun/20"
       }`}
     >
       <div className="flex items-center gap-2">

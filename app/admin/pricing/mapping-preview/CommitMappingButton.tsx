@@ -53,7 +53,7 @@ export function CommitMappingButton({
         type="button"
         onClick={handleClick}
         disabled={disabled || pending || matchedCount === 0}
-        className="pop-block rounded-sm bg-teal px-3 py-1 font-display text-[11px] tracking-wider text-ink disabled:opacity-40 disabled:cursor-not-allowed"
+        className="pop-block rounded-sm bg-wave px-3 py-1 font-display text-[11px] tracking-wider text-ink disabled:opacity-40 disabled:cursor-not-allowed"
         title={
           matchedCount === 0
             ? "Nothing to commit"
@@ -66,7 +66,7 @@ export function CommitMappingButton({
         <span
           role="status"
           className={`font-display text-[10px] tracking-wider ${
-            result.ok ? "text-teal" : "text-warn"
+            result.ok ? "text-wave" : "text-warn"
           }`}
         >
           {result.text}

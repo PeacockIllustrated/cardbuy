@@ -23,9 +23,9 @@
 export const COLORS = {
   ink: "#0a0a0a",
   paper: "#ffffff",
-  pink: "#ff4eb8",
-  teal: "#27d3c4",
-  yellow: "#ffe600",
+  ocean: "#3399d2",
+  wave: "#6acdf1",
+  sun: "#f69b26",
 } as const;
 
 /** TCG energy types driven by this system. Expand as new sprite SVGs
@@ -80,15 +80,15 @@ const SPRITE_PATHS: Record<ElementalType, string> = {
 /** Per-type brand-accent colour. Exported for React components that
  *  want to tint things (e.g. the starburst drop-shadow behind a
  *  featured tile) to match whichever particle set is active for that
- *  card. Pink/teal/yellow mapping keeps the accents on-brand while
+ *  card. ocean/wave/sun mapping keeps the accents on-brand while
  *  still differentiating types. */
 export const TYPE_GLOW_HEX: Record<ElementalType, string> = {
-  Fire: COLORS.pink,
-  Water: COLORS.teal,
-  Grass: COLORS.teal,
-  Lightning: COLORS.yellow,
-  Psychic: COLORS.pink,
-  Fighting: COLORS.yellow,
+  Fire: COLORS.ocean,
+  Water: COLORS.wave,
+  Grass: COLORS.wave,
+  Lightning: COLORS.sun,
+  Psychic: COLORS.ocean,
+  Fighting: COLORS.sun,
   Colorless: COLORS.paper,
 };
 

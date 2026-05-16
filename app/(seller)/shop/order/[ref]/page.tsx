@@ -54,8 +54,8 @@ export default async function OrderConfirmationPage({
           order.status === "cancelled"
             ? "bg-warn/20"
             : order.status === "delivered"
-              ? "bg-teal"
-              : "bg-yellow"
+              ? "bg-wave"
+              : "bg-sun"
         }`}
       >
         <span className="bg-ink text-paper-strong w-fit px-2 py-1 font-display text-[10px] tracking-wider">
@@ -171,14 +171,14 @@ export default async function OrderConfirmationPage({
           </div>
         </div>
 
-        <div className="pop-card bg-pink/15 rounded-md p-4 flex flex-col gap-3">
+        <div className="pop-card bg-ocean/15 rounded-md p-4 flex flex-col gap-3">
           <span className="font-display text-[11px] tracking-wider">
             What happens next
           </span>
           <ol className="flex flex-col gap-2 text-[13px] list-decimal pl-5">
-            <li>Lewis reviews your order.</li>
+            <li>Aqua TCG reviews your order.</li>
             <li>We confirm payment (Stripe coming soon — manual for now).</li>
-            <li>Lewis pulls and packs your cards (sleeved + toploadered).</li>
+            <li>Aqua TCG pulls and packs your cards (sleeved + toploadered).</li>
             <li>We dispatch and email a tracking number.</li>
             <li>
               Royal Mail delivers — usually within 2 working days after
@@ -186,7 +186,7 @@ export default async function OrderConfirmationPage({
             </li>
           </ol>
           {order.add_to_binder_opt_in ? (
-            <p className="text-[11px] text-teal font-display tracking-wider">
+            <p className="text-[11px] text-wave font-display tracking-wider">
               ✓ We&rsquo;ll add these to your binder when they arrive.
             </p>
           ) : null}
@@ -194,7 +194,7 @@ export default async function OrderConfirmationPage({
       </section>
 
       <footer className="text-[12px] text-muted">
-        Questions? Email <span className="underline">[support@cardbuy.tbc]</span>{" "}
+        Questions? Email <span className="underline">[support@aqua-tcg.tbc]</span>{" "}
         and quote {order.reference}.{" "}
         <Link href="/shop" className="underline">
           Continue shopping →

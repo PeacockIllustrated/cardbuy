@@ -18,14 +18,14 @@ const OPEN_DURATION_MS = 1400;
  *  [wrapper-dark, wrapper-light, foil-stripe]. Picked to read as a
  *  genuine booster wrapper rather than a flat swatch. */
 const PALETTES: Array<[string, string, string]> = [
-  ["#c41230", "#ff4eb8", "#ffe600"], // crimson · pink · yellow foil
-  ["#0e4f9f", "#27d3c4", "#ffffff"], // navy · teal · white foil
-  ["#6b2a9f", "#ff4eb8", "#27d3c4"], // purple · pink · teal foil
-  ["#0a0a0a", "#ffe600", "#ff4eb8"], // ink · yellow · pink foil
-  ["#1d6b2a", "#27d3c4", "#ffe600"], // green · teal · yellow foil
-  ["#b14b06", "#ffe600", "#ff4eb8"], // rust · yellow · pink foil
-  ["#064f77", "#27d3c4", "#ffe600"], // deep-blue · teal · yellow foil
-  ["#8b0e66", "#ff4eb8", "#ffe600"], // magenta · pink · yellow foil
+  ["#c41230", "#3399d2", "#f69b26"], // crimson · ocean · sun foil
+  ["#0e4f9f", "#6acdf1", "#ffffff"], // navy · wave · white foil
+  ["#6b2a9f", "#3399d2", "#6acdf1"], // purple · ocean · wave foil
+  ["#0a0a0a", "#f69b26", "#3399d2"], // ink · sun · ocean foil
+  ["#1d6b2a", "#6acdf1", "#f69b26"], // green · wave · sun foil
+  ["#b14b06", "#f69b26", "#3399d2"], // rust · sun · ocean foil
+  ["#064f77", "#6acdf1", "#f69b26"], // deep-blue · wave · sun foil
+  ["#8b0e66", "#3399d2", "#f69b26"], // magenta · ocean · sun foil
 ];
 
 export function paletteFor(id: string): [string, string, string] {

@@ -8,7 +8,7 @@ type AnnotationProps = {
 
 /**
  * Section eyebrow label. Styled as a small display-font caps line — kept
- * on admin pages where the IA labels still help Lewis; mostly removed
+ * on admin pages where the IA labels still help Aqua TCG; mostly removed
  * from customer-facing pages in Phase 5 polish.
  */
 export function Annotation({ children, inline, className = "" }: AnnotationProps) {

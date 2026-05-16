@@ -90,14 +90,14 @@ export default async function CardDetailPage({
   return (
     <div className="max-w-[1200px] mx-auto px-5 md:px-4 py-8 flex flex-col gap-8">
       <nav className="text-[12px] font-display tracking-wider flex items-center gap-3 flex-wrap">
-        <Link href="/packs" className="text-muted hover:text-pink">
+        <Link href="/packs" className="text-muted hover:text-ocean">
           ← ALL PACKS
         </Link>
         <span className="text-rule">/</span>
         {set ? (
           <Link
             href={`/search?set=${set.id}`}
-            className="inline-flex items-center gap-2 bg-paper-strong border-[3px] border-ink rounded-md px-2 py-1 shadow-[3px_3px_0_0_var(--color-ink)] hover:bg-yellow transition-colors"
+            className="inline-flex items-center gap-2 bg-paper-strong border-[3px] border-ink rounded-md px-2 py-1 shadow-[3px_3px_0_0_var(--color-ink)] hover:bg-sun transition-colors"
           >
             {set.symbolUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -152,11 +152,11 @@ export default async function CardDetailPage({
         <div className="flex flex-col gap-8">
           <header className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-display text-[10px] tracking-wider text-yellow bg-ink px-2 py-1 rounded-sm">
+              <span className="font-display text-[10px] tracking-wider text-sun bg-ink px-2 py-1 rounded-sm">
                 We want to buy this
               </span>
               {card.rarity ? (
-                <span className="font-display text-[10px] tracking-wider bg-pink text-ink border-2 border-ink px-2 py-1 rounded-sm">
+                <span className="font-display text-[10px] tracking-wider bg-ocean text-ink border-2 border-ink px-2 py-1 rounded-sm">
                   {card.rarity}
                 </span>
               ) : null}
@@ -271,7 +271,7 @@ export default async function CardDetailPage({
                 {card.abilities.map((a, i) => (
                   <li key={`${a.name}-${i}`} className="pop-card rounded-md p-4 flex flex-col gap-2">
                     <div className="flex items-baseline gap-2">
-                      <span className="font-display text-[10px] tracking-wider bg-yellow text-ink border-2 border-ink px-2 py-0.5 rounded-sm">
+                      <span className="font-display text-[10px] tracking-wider bg-sun text-ink border-2 border-ink px-2 py-0.5 rounded-sm">
                         {a.type}
                       </span>
                       <span className="font-display text-[18px] tracking-tight">{a.name}</span>
@@ -361,7 +361,7 @@ export default async function CardDetailPage({
                 <span
                   key={fmt}
                   className={`border-2 border-ink px-2 py-0.5 rounded-sm ${
-                    status === "Legal" ? "bg-teal text-ink" : "bg-paper-strong text-muted"
+                    status === "Legal" ? "bg-wave text-ink" : "bg-paper-strong text-muted"
                   }`}
                 >
                   {fmt} · {status}

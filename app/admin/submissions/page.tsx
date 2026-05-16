@@ -21,15 +21,15 @@ const STATUS_LABELS: Record<SubmissionStatus, string> = {
 };
 
 const STATUS_TONES: Partial<
-  Record<SubmissionStatus, "pink" | "teal" | "yellow" | "warn" | "muted">
+  Record<SubmissionStatus, "ocean" | "wave" | "sun" | "warn" | "muted">
 > = {
-  submitted: "yellow",
-  awaiting_cards: "yellow",
-  received: "teal",
-  under_review: "teal",
-  offer_revised: "pink",
-  approved: "teal",
-  paid: "teal",
+  submitted: "sun",
+  awaiting_cards: "sun",
+  received: "wave",
+  under_review: "wave",
+  offer_revised: "ocean",
+  approved: "wave",
+  paid: "wave",
   rejected: "warn",
   returned: "muted",
   cancelled: "muted",
@@ -70,7 +70,7 @@ export default async function AdminSubmissionsPage({
         title="Submissions"
         kicker={{
           label: active === "all" ? "ALL" : (STATUS_LABELS[active as SubmissionStatus] ?? String(active)).toUpperCase(),
-          tone: "yellow",
+          tone: "sun",
         }}
         subtitle="Incoming buylist packages — track status, quote, pay out."
         actions={
@@ -94,7 +94,7 @@ export default async function AdminSubmissionsPage({
               className={`border-2 rounded-sm px-2.5 py-1 font-display text-[11px] tracking-wider uppercase transition-colors ${
                 isActive
                   ? "border-ink bg-ink text-paper-strong"
-                  : "border-ink bg-paper-strong text-ink hover:bg-yellow"
+                  : "border-ink bg-paper-strong text-ink hover:bg-sun"
               }`}
             >
               {t.label}
@@ -126,12 +126,12 @@ export default async function AdminSubmissionsPage({
             rows.map((s) => {
               const tone = STATUS_TONES[s.status];
               const toneCls =
-                tone === "pink"
-                  ? "bg-pink text-ink"
-                  : tone === "teal"
-                    ? "bg-teal text-ink"
-                    : tone === "yellow"
-                      ? "bg-yellow text-ink"
+                tone === "ocean"
+                  ? "bg-ocean text-ink"
+                  : tone === "wave"
+                    ? "bg-wave text-ink"
+                    : tone === "sun"
+                      ? "bg-sun text-ink"
                       : tone === "warn"
                         ? "bg-warn text-paper-strong"
                         : "bg-paper-strong text-muted";

@@ -9,7 +9,7 @@ type Props = {
 /**
  * Sticky in-page nav for /packs. Clicking a chip smooth-scrolls to
  * the matching series section (`#series-<slug>`). On scroll, the
- * visible section's chip gets a pink highlight so the reader always
+ * visible section's chip gets a ocean highlight so the reader always
  * knows where they are in the 17-series stack.
  */
 export function PacksChipNav({ series }: Props) {
@@ -82,8 +82,8 @@ export function PacksChipNav({ series }: Props) {
               }}
               className={`shrink-0 font-display text-[10px] md:text-[11px] tracking-[0.15em] uppercase px-2.5 py-1.5 border-2 transition-colors rounded-sm ${
                 isActive
-                  ? "bg-pink border-ink text-ink"
-                  : "bg-paper-strong border-ink text-ink hover:bg-yellow"
+                  ? "bg-ocean border-ink text-ink"
+                  : "bg-paper-strong border-ink text-ink hover:bg-sun"
               }`}
             >
               {s}

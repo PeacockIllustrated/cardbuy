@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-type Tone = "paper" | "pink" | "teal" | "yellow" | "warn" | "ink";
+type Tone = "paper" | "ocean" | "wave" | "sun" | "warn" | "ink";
 
 type Props = {
   label: string;
@@ -16,9 +16,9 @@ type Props = {
 
 const TONE_BG: Record<Tone, string> = {
   paper: "bg-paper-strong",
-  pink: "bg-pink",
-  teal: "bg-teal",
-  yellow: "bg-yellow",
+  ocean: "bg-ocean",
+  wave: "bg-wave",
+  sun: "bg-sun",
   warn: "bg-warn text-paper-strong",
   ink: "bg-ink text-paper-strong",
 };

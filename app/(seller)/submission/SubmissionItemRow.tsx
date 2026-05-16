@@ -58,7 +58,7 @@ export function SubmissionItemRow({
           <div className="flex flex-col gap-0.5 min-w-0">
             <Link
               href={`/card/${item.card_id}`}
-              className="font-display text-[13px] leading-tight tracking-tight line-clamp-2 hover:text-pink"
+              className="font-display text-[13px] leading-tight tracking-tight line-clamp-2 hover:text-ocean"
             >
               {cardName}
             </Link>

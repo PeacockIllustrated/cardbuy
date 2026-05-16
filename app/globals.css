@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 /* ----------------------------------------------------------------
- * Phase 5 pop-art brand palette.
- * See PHASE5_BRANDING.md for token rationale and surface system.
- * Phase 1's grayscale-only lockdown was lifted on phase promotion.
+ * Aqua TCG brand palette (pop-art system, Aqua-TCG colourway).
+ * Accent values sampled from public/aqua-tcg.svg.
+ * See PHASE5_BRANDING.md for the surface system this clothes.
  * ----------------------------------------------------------------*/
 @theme {
   /* Wipe Tailwind's default palette so unauthorised colours don't sneak in. */
@@ -14,10 +14,10 @@
   --color-paper: #fff8e7;          /* cream page background */
   --color-paper-strong: #ffffff;   /* pure white inner wells */
 
-  /* Accents — saturated three-up */
-  --color-pink: #ff4eb8;           /* primary accent · CTAs · featured */
-  --color-teal: #27d3c4;           /* secondary · "buy" surfaces · badges */
-  --color-yellow: #ffe600;         /* tertiary · "sell" surfaces · highlights */
+  /* Accents — Aqua TCG three-up (from logo SVG) */
+  --color-ocean: #3399d2;          /* primary accent · CTAs · featured */
+  --color-wave: #6acdf1;           /* secondary · "buy" surfaces · badges */
+  --color-sun: #f69b26;            /* tertiary · wordmark · highlights */
 
   /* Support */
   --color-rule: #e8dfc7;           /* cream-toned hairline */
@@ -125,10 +125,10 @@ input[type="number"] {
   text-transform: uppercase;
 }
 
-/* Selection: invert with pink for personality */
+/* Selection: invert with ocean for personality */
 ::selection {
-  background: var(--color-pink);
-  color: var(--color-ink);
+  background: var(--color-ocean);
+  color: var(--color-paper-strong);
 }
 
 /* Default focus ring — visible on every accent */

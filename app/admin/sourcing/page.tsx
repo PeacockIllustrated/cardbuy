@@ -8,7 +8,7 @@ import { searchCards } from "@/lib/fixtures/cards";
 /**
  * `/admin/sourcing?card=<id>` · Phase 6 Slice C2.
  *
- * "Someone wants what you have." Lewis picks a card (usually because
+ * "Someone wants what you have." Aqua TCG picks a card (usually because
  * he has a buyer), this view lists every user whose binder has it so
  * he can message them an enhanced buyback offer.
  *
@@ -37,7 +37,7 @@ export default async function AdminSourcingPage({
           { label: "Sourcing" },
         ]}
         title="Who owns this card?"
-        kicker={{ label: "CROSS-BINDER", tone: "pink" }}
+        kicker={{ label: "CROSS-BINDER", tone: "ocean" }}
         subtitle="Cards live in user binders — use this view when you have a buyer and need to source. Reach out to holders with an enhanced buyback offer."
       />
 
@@ -60,7 +60,7 @@ export default async function AdminSourcingPage({
         </label>
         <button
           type="submit"
-          className="pop-block rounded-sm bg-yellow px-3 py-1.5 font-display text-[11px] tracking-wider text-ink self-start"
+          className="pop-block rounded-sm bg-sun px-3 py-1.5 font-display text-[11px] tracking-wider text-ink self-start"
         >
           Search
         </button>
@@ -75,7 +75,7 @@ export default async function AdminSourcingPage({
           Search for a card above, or click any row on{" "}
           <Link
             href="/admin/demand"
-            className="underline decoration-2 underline-offset-2 hover:text-pink"
+            className="underline decoration-2 underline-offset-2 hover:text-ocean"
           >
             Demand
           </Link>{" "}
@@ -148,7 +148,7 @@ async function HoldersView({ cardId }: { cardId: string }) {
           {set_name} ·{" "}
           <Link
             href={`/admin/demand/${cardId}`}
-            className="underline decoration-2 underline-offset-2 hover:text-pink"
+            className="underline decoration-2 underline-offset-2 hover:text-ocean"
           >
             demand drilldown →
           </Link>
@@ -195,7 +195,7 @@ async function HoldersView({ cardId }: { cardId: string }) {
                   <TD className="tabular-nums">{h.quantity}</TD>
                   <TD>
                     {h.is_grail ? (
-                      <span className="border-2 border-ink rounded-sm px-1.5 py-0.5 font-display text-[10px] bg-yellow">
+                      <span className="border-2 border-ink rounded-sm px-1.5 py-0.5 font-display text-[10px] bg-sun">
                         ★ Grail
                       </span>
                     ) : null}

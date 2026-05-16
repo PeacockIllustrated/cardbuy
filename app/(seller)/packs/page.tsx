@@ -8,7 +8,7 @@ import {
 } from "@/lib/fixtures/cards";
 
 export const metadata = {
-  title: "Pick a pack · cardbuy",
+  title: "Pick a pack · Aqua TCG",
   description:
     "Tear open any set. Every pack from Base Set to current — tap one to see every card inside and what we'll pay.",
 };
@@ -29,7 +29,7 @@ export default function PacksPage() {
     <main className="bg-paper">
       {/* COMPACT HERO — half the height of the previous hero so the
           packs start above the fold on a laptop. */}
-      <section className="border-b-[3px] border-ink bg-yellow relative overflow-hidden">
+      <section className="border-b-[3px] border-ink bg-sun relative overflow-hidden">
         <div
           aria-hidden
           className="absolute inset-0 opacity-[0.07]"
@@ -68,7 +68,7 @@ export default function PacksPage() {
             </Link>
             <Link
               href="/submission"
-              className="inline-flex items-center justify-center border-2 border-ink bg-paper-strong text-ink px-3 py-1.5 font-display text-[11px] tracking-wider uppercase rounded-md hover:bg-teal"
+              className="inline-flex items-center justify-center border-2 border-ink bg-paper-strong text-ink px-3 py-1.5 font-display text-[11px] tracking-wider uppercase rounded-md hover:bg-wave"
             >
               My submission
             </Link>
@@ -137,7 +137,7 @@ export default function PacksPage() {
           </p>
           <Link
             href="/search"
-            className="pop-block inline-flex items-center justify-center bg-yellow text-ink px-4 py-2 font-display text-[12px] tracking-wider uppercase rounded-md"
+            className="pop-block inline-flex items-center justify-center bg-sun text-ink px-4 py-2 font-display text-[12px] tracking-wider uppercase rounded-md"
           >
             Search all {totalCards.toLocaleString()} cards →
           </Link>

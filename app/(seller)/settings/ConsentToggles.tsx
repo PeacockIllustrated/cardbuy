@@ -69,7 +69,7 @@ export function ConsentToggles({ initial }: { initial: ConsentSnapshot }) {
             disabled={pending}
             aria-pressed={on}
             className={`pop-block rounded-sm text-left px-4 py-3 flex items-start gap-3 disabled:opacity-70 ${
-              on ? "bg-teal" : "bg-paper-strong"
+              on ? "bg-wave" : "bg-paper-strong"
             }`}
           >
             <span

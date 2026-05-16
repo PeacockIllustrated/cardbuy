@@ -191,7 +191,7 @@ export async function triggerFxSync(): Promise<TriggerFxResult> {
  * /admin/pricing/mapping-preview) server-side, then UPSERTs each
  * matched row into `lewis_card_tcg_map` with `source='auto'`. Rows
  * already marked `source='manual-override'` are never overwritten —
- * those represent Lewis's hand-curated exceptions (e.g. the Base Set
+ * those represent Aqua TCG's hand-curated exceptions (e.g. the Base Set
  * Machamp Shadowless-group edge case).
  * ───────────────────────────────────────────────────────────────── */
 

@@ -22,7 +22,7 @@ export default async function SubmissionSubmitPage() {
     return (
       <div className="max-w-[720px] mx-auto px-4 py-12 flex flex-col gap-6">
         <header className="flex flex-col gap-2">
-          <span className="bg-yellow text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
+          <span className="bg-sun text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
             Almost done
           </span>
           <h1 className="font-display text-[32px] leading-none tracking-tight">
@@ -54,7 +54,7 @@ export default async function SubmissionSubmitPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8 flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <span className="bg-yellow text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
+        <span className="bg-sun text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
           Almost done
         </span>
         <h1 className="font-display text-[32px] leading-none tracking-tight">
@@ -85,7 +85,7 @@ export default async function SubmissionSubmitPage() {
           </div>
           <Link
             href="/submission"
-            className="text-[11px] font-display tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-pink"
+            className="text-[11px] font-display tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-ocean"
           >
             ← back to your submission
           </Link>

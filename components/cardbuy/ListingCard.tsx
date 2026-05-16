@@ -16,7 +16,7 @@ type Props = {
   /** Smaller layout for use in horizontal rails. */
   compact?: boolean;
   /** Chooses which accent takes the biggest burst layer behind the card. */
-  accent?: "pink" | "teal" | "yellow";
+  accent?: "ocean" | "wave" | "sun";
   /** Gen-1 TCG energy type — drives the per-element hover particle
    *  field. Caller is responsible for looking it up from the card
    *  catalogue; a null/undefined disables particles for this tile. */
@@ -97,20 +97,20 @@ const BURST_PALETTE: Record<
   NonNullable<Props["accent"]>,
   { primary: string; secondary: string }
 > = {
-  // "Yellow" accent became a paper-white primary with a teal peek —
-  // the yellow-on-pink was too close to the section backdrop and
+  // "sun" accent became a paper-white primary with a wave peek —
+  // the sun-on-ocean was too close to the section backdrop and
   // read as tacky. White halo is cleaner and still brand-correct.
-  yellow: {
+  sun: {
     primary: "var(--color-paper-strong)",
-    secondary: "var(--color-teal)",
+    secondary: "var(--color-wave)",
   },
-  teal: {
-    primary: "var(--color-teal)",
+  wave: {
+    primary: "var(--color-wave)",
     secondary: "var(--color-paper-strong)",
   },
-  pink: {
+  ocean: {
     primary: "var(--color-paper-strong)",
-    secondary: "var(--color-teal)",
+    secondary: "var(--color-wave)",
   },
 };
 
@@ -123,7 +123,7 @@ const BURST_PALETTE: Record<
 export function ListingCard({
   listing,
   compact = false,
-  accent = "yellow",
+  accent = "sun",
   elementalType,
 }: Props) {
   const [hovered, setHovered] = useState(false);
@@ -233,7 +233,7 @@ export function ListingCard({
               Sold out
             </span>
           ) : listing.is_new_in ? (
-            <span className="absolute -top-2 -right-2 z-[5] bg-pink text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider -rotate-[4deg] pointer-events-none shadow-[2px_2px_0_0_var(--color-ink)]">
+            <span className="absolute -top-2 -right-2 z-[5] bg-ocean text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider -rotate-[4deg] pointer-events-none shadow-[2px_2px_0_0_var(--color-ink)]">
               New in
             </span>
           ) : null}
@@ -243,7 +243,7 @@ export function ListingCard({
             </span>
           ) : null}
           {listing.variant === "graded" ? (
-            <span className="absolute -top-2 -left-2 z-[5] bg-teal text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider -rotate-[6deg] pointer-events-none shadow-[2px_2px_0_0_var(--color-ink)] tabular-nums">
+            <span className="absolute -top-2 -left-2 z-[5] bg-wave text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider -rotate-[6deg] pointer-events-none shadow-[2px_2px_0_0_var(--color-ink)] tabular-nums">
               {listing.grading_company} {listing.grade}
             </span>
           ) : null}

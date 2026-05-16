@@ -4,11 +4,11 @@ type ImagePlaceholderProps = {
   /** Override the default "Card art" label. */
   label?: string;
   /** Force a specific accent. Otherwise rotates by hash of label+dims. */
-  accent?: "pink" | "teal" | "yellow" | "paper-strong";
+  accent?: "ocean" | "wave" | "sun" | "paper-strong";
   className?: string;
 };
 
-const ACCENTS = ["pink", "teal", "yellow"] as const;
+const ACCENTS = ["ocean", "wave", "sun"] as const;
 
 function pickAccent(seed: string): (typeof ACCENTS)[number] {
   let h = 0;
@@ -17,9 +17,9 @@ function pickAccent(seed: string): (typeof ACCENTS)[number] {
 }
 
 const ACCENT_BG: Record<NonNullable<ImagePlaceholderProps["accent"]>, string> = {
-  pink: "bg-pink",
-  teal: "bg-teal",
-  yellow: "bg-yellow",
+  ocean: "bg-ocean",
+  wave: "bg-wave",
+  sun: "bg-sun",
   "paper-strong": "bg-paper-strong",
 };
 

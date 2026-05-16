@@ -32,11 +32,11 @@ const LABELS: Record<ShopOrderStatus, string> = {
 };
 
 const TONES: Record<ShopOrderStatus, string> = {
-  pending_payment: "bg-yellow",
-  paid: "bg-yellow",
-  packing: "bg-teal",
-  shipped: "bg-teal",
-  delivered: "bg-pink",
+  pending_payment: "bg-sun",
+  paid: "bg-sun",
+  packing: "bg-wave",
+  shipped: "bg-wave",
+  delivered: "bg-ocean",
   refunded: "bg-paper-strong",
   cancelled: "bg-paper-strong",
 };
@@ -129,7 +129,7 @@ export function OrderStatusControls({
       </div>
 
       {currentStatus === "shipped" && addToBinderOptIn ? (
-        <p className="text-[11px] text-teal font-display tracking-wider">
+        <p className="text-[11px] text-wave font-display tracking-wider">
           On delivered, we&rsquo;ll auto-add these items to the buyer&rsquo;s
           binder.
         </p>

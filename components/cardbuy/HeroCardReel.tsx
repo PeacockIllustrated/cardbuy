@@ -9,7 +9,7 @@ type Tier = {
   blurb: string;
   /** Rough odds of pulling this tier from a booster. */
   pullRate: string;
-  /** Indicative GBP range from Lewis's side of the buylist. */
+  /** Indicative GBP range from Aqua TCG's side of the buylist. */
   priceRange: string;
   /** Notable example Pokémon for this tier. */
   examples: string[];
@@ -38,9 +38,9 @@ const TIERS: Tier[] = [
     pullRate: "~25% of pulls",
     priceRange: "£0.30 – £2",
     examples: ["Haunter", "Machoke", "Ivysaur"],
-    bg: "bg-teal",
+    bg: "bg-wave",
     tint: "text-ink",
-    chipBg: "bg-teal",
+    chipBg: "bg-wave",
   },
   {
     label: "RARE",
@@ -48,9 +48,9 @@ const TIERS: Tier[] = [
     pullRate: "1 guaranteed per pack",
     priceRange: "£2 – £25",
     examples: ["Beedrill", "Dragonair", "Hitmonlee"],
-    bg: "bg-yellow",
+    bg: "bg-sun",
     tint: "text-ink",
-    chipBg: "bg-yellow",
+    chipBg: "bg-sun",
   },
   {
     label: "RARE HOLO",
@@ -58,9 +58,9 @@ const TIERS: Tier[] = [
     pullRate: "~1 in 3 packs",
     priceRange: "£30 – £1000+",
     examples: ["Charizard", "Blastoise", "Mewtwo"],
-    bg: "bg-pink",
+    bg: "bg-ocean",
     tint: "text-ink",
-    chipBg: "bg-pink",
+    chipBg: "bg-ocean",
   },
   {
     label: "PROMO / CHASE",
@@ -69,7 +69,7 @@ const TIERS: Tier[] = [
     priceRange: "£80 – £10,000+",
     examples: ["Ivy Pikachu", "Mew", "No.1 Trainer"],
     bg: "bg-ink",
-    tint: "text-yellow",
+    tint: "text-sun",
     chipBg: "bg-ink",
   },
 ];
@@ -173,7 +173,7 @@ export function HeroCardReel({ cards }: Props) {
         const tier = TIERS[activeI];
 
         // Wordmark tint swap on both mobile + desktop wordmarks.
-        const tintClasses = ["text-muted", "text-ink", "text-yellow"];
+        const tintClasses = ["text-muted", "text-ink", "text-sun"];
         labelRefs.current.forEach((el) => {
           if (!el) return;
           el.textContent = tier.label;
@@ -192,17 +192,17 @@ export function HeroCardReel({ cards }: Props) {
           tierIndexRef.current.textContent = `${activeI + 1} / ${TIERS.length}`;
         }
         if (tierChipRef.current) {
-          const chipClasses = ["bg-paper-strong", "bg-teal", "bg-yellow", "bg-pink", "bg-ink"];
+          const chipClasses = ["bg-paper-strong", "bg-wave", "bg-sun", "bg-ocean", "bg-ink"];
           chipClasses.forEach((c) => tierChipRef.current?.classList.remove(c));
           tierChipRef.current.classList.add(tier.chipBg);
           // Flip the chip's text colour against dark bg.
-          if (tier.bg === "bg-ink") tierChipRef.current.classList.add("text-yellow");
-          else tierChipRef.current.classList.remove("text-yellow");
+          if (tier.bg === "bg-ink") tierChipRef.current.classList.add("text-sun");
+          else tierChipRef.current.classList.remove("text-sun");
         }
 
         const stageBg = stageBgRef.current;
         if (stageBg) {
-          const bgClasses = ["bg-paper-strong", "bg-teal", "bg-yellow", "bg-pink", "bg-ink"];
+          const bgClasses = ["bg-paper-strong", "bg-wave", "bg-sun", "bg-ocean", "bg-ink"];
           bgClasses.forEach((c) => stageBg.classList.remove(c));
           stageBg.classList.add(tier.bg);
         }
@@ -264,7 +264,7 @@ export function HeroCardReel({ cards }: Props) {
 
         {/* Header strip */}
         <div className="relative z-10 flex items-center justify-between px-4 md:px-6 pt-3 md:pt-4">
-          <span className="font-display text-[10px] tracking-widest text-ink bg-yellow border-2 border-ink px-2 py-1 rounded-sm">
+          <span className="font-display text-[10px] tracking-widest text-ink bg-sun border-2 border-ink px-2 py-1 rounded-sm">
             The rarity ladder
           </span>
           <span className="font-display text-[10px] tracking-widest text-muted hidden sm:block">
@@ -401,7 +401,7 @@ export function HeroCardReel({ cards }: Props) {
         <div className="relative z-10 h-[4px] bg-ink/10">
           <div
             ref={progressBarRef}
-            className="absolute inset-0 bg-pink origin-left"
+            className="absolute inset-0 bg-ocean origin-left"
             style={{ transform: "scaleX(0)" }}
             aria-hidden="true"
           />

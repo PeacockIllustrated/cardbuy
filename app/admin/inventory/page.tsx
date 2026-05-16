@@ -21,7 +21,7 @@ export default function AdminInventoryPage() {
           { label: "Inventory" },
         ]}
         title="Inventory & listings"
-        kicker={{ label: "SELL", tone: "pink" }}
+        kicker={{ label: "SELL", tone: "ocean" }}
         subtitle="Every physical stock unit on the shopfront — set prices, toggle featured, flag sold."
         actions={
           <span className="font-display text-[11px] tracking-wider tabular-nums text-muted">

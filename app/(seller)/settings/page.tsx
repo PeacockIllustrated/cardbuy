@@ -61,7 +61,7 @@ export default async function SettingsPage() {
           See our{" "}
           <a
             href="/privacy"
-            className="underline decoration-2 underline-offset-2 hover:text-pink"
+            className="underline decoration-2 underline-offset-2 hover:text-ocean"
           >
             Privacy Policy
           </a>{" "}

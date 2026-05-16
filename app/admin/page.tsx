@@ -112,8 +112,8 @@ export default async function AdminDashboardPage() {
     <div className="px-4 md:px-6 py-6 max-w-[1400px] mx-auto flex flex-col gap-6">
       <AdminPageHeader
         crumbs={[{ label: "Admin", href: "/admin" }, { label: "Dashboard" }]}
-        title="Today at cardbuy"
-        kicker={{ label: "LIVE", tone: "teal" }}
+        title="Today at Aqua TCG"
+        kicker={{ label: "LIVE", tone: "wave" }}
         subtitle="The two sides of the business in one glance — buy queue, sell queue, and what needs your attention now."
       />
 
@@ -172,7 +172,7 @@ export default async function AdminDashboardPage() {
           eyebrow="Buy side"
           title="Buylist"
           actions={
-            <span className="border-2 border-ink bg-yellow px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
+            <span className="border-2 border-ink bg-sun px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
               LIVE
             </span>
           }
@@ -197,7 +197,7 @@ export default async function AdminDashboardPage() {
             <StatCard
               label="Awaiting cards"
               value={stats.awaitingCards}
-              tone={stats.awaitingCards > 0 ? "yellow" : "paper"}
+              tone={stats.awaitingCards > 0 ? "sun" : "paper"}
               sub={stats.awaitingCards > 0 ? "Posted but not received" : "None"}
               href="/admin/submissions?status=submitted"
             />
@@ -205,13 +205,13 @@ export default async function AdminDashboardPage() {
           <div className="flex gap-3 pt-3 text-[11px] font-display tracking-wider">
             <Link
               href="/admin/submissions"
-              className="underline underline-offset-4 decoration-2 hover:text-pink"
+              className="underline underline-offset-4 decoration-2 hover:text-ocean"
             >
               ALL SUBMISSIONS →
             </Link>
             <Link
               href="/admin/pricing"
-              className="underline underline-offset-4 decoration-2 hover:text-pink"
+              className="underline underline-offset-4 decoration-2 hover:text-ocean"
             >
               MARGIN DIALS →
             </Link>
@@ -222,7 +222,7 @@ export default async function AdminDashboardPage() {
           eyebrow="Sell side"
           title="Shopfront"
           actions={
-            <span className="border-2 border-ink bg-pink px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
+            <span className="border-2 border-ink bg-ocean px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm">
               LIVE
             </span>
           }
@@ -236,7 +236,7 @@ export default async function AdminDashboardPage() {
             <StatCard
               label="Orders to pack"
               value={ordersToPack}
-              tone={ordersToPack > 0 ? "pink" : "paper"}
+              tone={ordersToPack > 0 ? "ocean" : "paper"}
               href="/admin/orders?status=paid"
               sub={ordersToPack > 0 ? "Needs shipping label" : "None"}
             />
@@ -257,19 +257,19 @@ export default async function AdminDashboardPage() {
           <div className="flex gap-3 pt-3 text-[11px] font-display tracking-wider">
             <Link
               href="/admin/orders"
-              className="underline underline-offset-4 decoration-2 hover:text-pink"
+              className="underline underline-offset-4 decoration-2 hover:text-ocean"
             >
               ALL ORDERS →
             </Link>
             <Link
               href="/admin/inventory"
-              className="underline underline-offset-4 decoration-2 hover:text-pink"
+              className="underline underline-offset-4 decoration-2 hover:text-ocean"
             >
               INVENTORY →
             </Link>
             <Link
               href="/admin/demand"
-              className="underline underline-offset-4 decoration-2 hover:text-pink"
+              className="underline underline-offset-4 decoration-2 hover:text-ocean"
             >
               DEMAND →
             </Link>
@@ -284,7 +284,7 @@ export default async function AdminDashboardPage() {
         actions={
           <Link
             href="/admin/inventory?tab=featured"
-            className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 hover:text-pink"
+            className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 hover:text-ocean"
           >
             Manage in inventory →
           </Link>
@@ -362,8 +362,8 @@ export default async function AdminDashboardPage() {
                     <span
                       className={`border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider rounded-sm ${
                         a.kind === "submission"
-                          ? "bg-yellow text-ink"
-                          : "bg-pink text-ink"
+                          ? "bg-sun text-ink"
+                          : "bg-ocean text-ink"
                       }`}
                     >
                       {a.kind === "submission" ? "BUY" : "SELL"}
@@ -372,7 +372,7 @@ export default async function AdminDashboardPage() {
                   <TD>
                     <Link
                       href={a.href}
-                      className="font-mono text-[12px] underline underline-offset-4 decoration-2 hover:text-pink"
+                      className="font-mono text-[12px] underline underline-offset-4 decoration-2 hover:text-ocean"
                     >
                       {a.ref}
                     </Link>
@@ -418,7 +418,7 @@ function buildActionQueue(input: {
       count: input.received,
       cta: "Post arrived, need quoting",
       href: "/admin/submissions?status=received",
-      bg: "bg-yellow",
+      bg: "bg-sun",
     });
   }
   if (input.offerRevised > 0) {
@@ -445,7 +445,7 @@ function buildActionQueue(input: {
       count: input.pendingPayment,
       cta: "Buyer hasn't paid yet",
       href: "/admin/orders?status=pending_payment",
-      bg: "bg-pink",
+      bg: "bg-ocean",
     });
   }
   if (input.ordersToPack > 0) {
@@ -454,7 +454,7 @@ function buildActionQueue(input: {
       count: input.ordersToPack,
       cta: "Paid — print label and send",
       href: "/admin/orders?status=paid",
-      bg: "bg-pink",
+      bg: "bg-ocean",
     });
   }
   if (input.lowStock > 0) {
@@ -463,7 +463,7 @@ function buildActionQueue(input: {
       count: input.lowStock,
       cta: "One or fewer remaining",
       href: "/admin/inventory",
-      bg: "bg-teal",
+      bg: "bg-wave",
     });
   }
   if (input.emptyFeaturedSlots > 0) {
@@ -472,7 +472,7 @@ function buildActionQueue(input: {
       count: input.emptyFeaturedSlots,
       cta: "Homepage promo slots unused",
       href: "/admin/inventory?tab=featured",
-      bg: "bg-teal",
+      bg: "bg-wave",
     });
   }
   return items;

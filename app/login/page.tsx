@@ -18,7 +18,7 @@ type SearchParams = Promise<{
 }>;
 
 export const metadata = {
-  title: "Sign in · cardbuy",
+  title: "Sign in · Aqua TCG",
 };
 
 function resolveMode(raw?: string): Mode {
@@ -67,7 +67,7 @@ export default async function LoginPage({
           </span>
           <h1 className="font-display text-[32px] md:text-[44px] leading-[0.9] tracking-tight">
             {mode === "signup"
-              ? "Create your cardbuy account."
+              ? "Create your Aqua TCG account."
               : mode === "signup_sent"
                 ? "Check your email."
                 : mode === "forgot"
@@ -156,13 +156,13 @@ export default async function LoginPage({
             <div className="flex items-center justify-between text-[11px] font-display tracking-wider">
               <Link
                 href="/login?mode=signup"
-                className="underline underline-offset-4 decoration-2 text-muted hover:text-pink"
+                className="underline underline-offset-4 decoration-2 text-muted hover:text-ocean"
               >
                 New here? Create an account
               </Link>
               <Link
                 href="/login?mode=forgot"
-                className="underline underline-offset-4 decoration-2 text-muted hover:text-pink"
+                className="underline underline-offset-4 decoration-2 text-muted hover:text-ocean"
               >
                 Forgot password
               </Link>
@@ -217,13 +217,13 @@ export default async function LoginPage({
             <p className="text-[11px] text-muted">
               By creating an account you agree to the{" "}
               <Link href="#" className="underline underline-offset-4">
-                cardbuy terms
+                Aqua TCG terms
               </Link>
               .
             </p>
             <Link
               href="/login"
-              className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-pink self-start"
+              className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-ocean self-start"
             >
               ← already have an account? sign in
             </Link>
@@ -248,7 +248,7 @@ export default async function LoginPage({
             </Button>
             <Link
               href="/login"
-              className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-pink self-start"
+              className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-ocean self-start"
             >
               ← back to sign in
             </Link>
@@ -256,7 +256,7 @@ export default async function LoginPage({
         ) : (
           // signup_sent / forgot_sent
           <div className="pop-card rounded-md p-5 flex flex-col gap-3">
-            <span className="font-display text-[11px] tracking-wider bg-yellow text-ink border-2 border-ink px-2 py-1 w-fit rounded-sm">
+            <span className="font-display text-[11px] tracking-wider bg-sun text-ink border-2 border-ink px-2 py-1 w-fit rounded-sm">
               EMAIL ON THE WAY
             </span>
             <p className="text-[13px] text-secondary">
@@ -266,7 +266,7 @@ export default async function LoginPage({
             </p>
             <Link
               href="/login"
-              className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-pink self-start"
+              className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 text-muted hover:text-ocean self-start"
             >
               ← back to sign in
             </Link>
@@ -296,7 +296,7 @@ function TabLink({
       } ${
         active
           ? "bg-ink text-paper-strong"
-          : "bg-paper-strong text-ink hover:bg-yellow"
+          : "bg-paper-strong text-ink hover:bg-sun"
       } ${
         !active && !right ? "border-r-[3px] border-ink" : ""
       }`}

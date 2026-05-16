@@ -20,7 +20,7 @@ export default async function ConfirmationPage({
 
   return (
     <div className="max-w-[900px] mx-auto px-4 py-10 flex flex-col gap-8">
-      <header className="pop-block bg-yellow rounded-lg p-6 flex flex-col gap-3">
+      <header className="pop-block bg-sun rounded-lg p-6 flex flex-col gap-3">
         <span className="bg-ink text-paper-strong w-fit px-2 py-1 font-display text-[10px] tracking-wider">
           Submission logged
         </span>
@@ -80,7 +80,7 @@ export default async function ConfirmationPage({
 
       <footer className="text-[12px] text-muted">
         Questions? Email{" "}
-        <span className="underline">[support@cardbuy.tbc]</span> and quote{" "}
+        <span className="underline">[support@aqua-tcg.tbc]</span> and quote{" "}
         {submission.reference}.{" "}
         <Link href="/packs" className="underline underline-offset-4 decoration-2">
           Build another submission →

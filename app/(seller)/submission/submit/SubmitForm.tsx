@@ -101,7 +101,7 @@ export function SubmitForm({ profile, defaultEmail }: Props) {
             className={`px-3 py-1.5 font-display text-[11px] tracking-wider uppercase ${
               payout === "paypal"
                 ? "bg-ink text-paper-strong"
-                : "bg-paper-strong text-ink hover:bg-yellow"
+                : "bg-paper-strong text-ink hover:bg-sun"
             }`}
           >
             PayPal cash
@@ -112,7 +112,7 @@ export function SubmitForm({ profile, defaultEmail }: Props) {
             className={`px-3 py-1.5 font-display text-[11px] tracking-wider uppercase border-l-[3px] border-ink ${
               payout === "store_credit"
                 ? "bg-ink text-paper-strong"
-                : "bg-paper-strong text-ink hover:bg-yellow"
+                : "bg-paper-strong text-ink hover:bg-sun"
             }`}
           >
             Store credit +20%
@@ -163,7 +163,7 @@ export function SubmitForm({ profile, defaultEmail }: Props) {
           <span>
             I agree to the{" "}
             <a href="#" className="underline underline-offset-4 decoration-2">
-              cardbuy seller terms
+              Aqua TCG seller terms
             </a>{" "}
             and confirm the cards I am sending match the conditions
             declared.

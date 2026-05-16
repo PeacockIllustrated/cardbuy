@@ -14,7 +14,7 @@ type NavItem = {
   href: string;
   label: string;
   glyph: string;
-  tone: "pink" | "teal" | "yellow" | "paper";
+  tone: "ocean" | "wave" | "sun" | "paper";
   badge?: number;
 };
 
@@ -38,38 +38,38 @@ function buildSections(counts: AdminNavCounts): NavSection[] {
           href: "/admin/submissions",
           label: "Submissions",
           glyph: "↓",
-          tone: "yellow",
+          tone: "sun",
           badge: counts.awaitingCards,
         },
-        { href: "/admin/pricing", label: "Pricing", glyph: "%", tone: "yellow" },
+        { href: "/admin/pricing", label: "Pricing", glyph: "%", tone: "sun" },
       ],
     },
     {
       title: "Sell side",
       items: [
-        { href: "/admin/inventory", label: "Inventory", glyph: "▤", tone: "pink" },
+        { href: "/admin/inventory", label: "Inventory", glyph: "▤", tone: "ocean" },
         {
           href: "/admin/orders",
           label: "Orders",
           glyph: "↑",
-          tone: "pink",
+          tone: "ocean",
           badge: counts.toPack + counts.pendingPayment,
         },
-        { href: "/admin/demand", label: "Demand", glyph: "◎", tone: "pink" },
-        { href: "/admin/sourcing", label: "Sourcing", glyph: "⌕", tone: "pink" },
+        { href: "/admin/demand", label: "Demand", glyph: "◎", tone: "ocean" },
+        { href: "/admin/sourcing", label: "Sourcing", glyph: "⌕", tone: "ocean" },
       ],
     },
     {
       title: "Catalogue",
       items: [
-        { href: "/admin/cards", label: "Cards", glyph: "▥", tone: "teal" },
-        { href: "/admin/sync", label: "Sync", glyph: "↻", tone: "teal" },
+        { href: "/admin/cards", label: "Cards", glyph: "▥", tone: "wave" },
+        { href: "/admin/sync", label: "Sync", glyph: "↻", tone: "wave" },
       ],
     },
     {
       title: "People",
       items: [
-        { href: "/admin/users", label: "Users", glyph: "◉", tone: "teal" },
+        { href: "/admin/users", label: "Users", glyph: "◉", tone: "wave" },
       ],
     },
   ];
@@ -77,12 +77,12 @@ function buildSections(counts: AdminNavCounts): NavSection[] {
 
 function toneBgClass(tone: NavItem["tone"]): string {
   switch (tone) {
-    case "pink":
-      return "bg-pink";
-    case "teal":
-      return "bg-teal";
-    case "yellow":
-      return "bg-yellow";
+    case "ocean":
+      return "bg-ocean";
+    case "wave":
+      return "bg-wave";
+    case "sun":
+      return "bg-sun";
     default:
       return "bg-paper-strong";
   }
@@ -90,12 +90,12 @@ function toneBgClass(tone: NavItem["tone"]): string {
 
 function toneHoverClass(tone: NavItem["tone"]): string {
   switch (tone) {
-    case "pink":
-      return "hover:bg-pink/15";
-    case "teal":
-      return "hover:bg-teal/15";
-    case "yellow":
-      return "hover:bg-yellow/20";
+    case "ocean":
+      return "hover:bg-ocean/15";
+    case "wave":
+      return "hover:bg-wave/15";
+    case "sun":
+      return "hover:bg-sun/20";
     default:
       return "hover:bg-paper-strong/10";
   }
@@ -117,10 +117,10 @@ export function AdminSidebar({ counts }: { counts: AdminNavCounts }) {
       <div className="lg:hidden sticky top-0 z-40 border-b-[3px] border-ink bg-ink text-paper-strong">
         <div className="flex items-center justify-between px-3 py-2.5 gap-3">
           <Link href="/admin" className="flex items-baseline gap-2">
-            <span className="font-display text-[18px] tracking-tight leading-none text-paper-strong">
-              cardbuy
+            <span className="font-display text-[18px] tracking-tight leading-none text-sun">
+              Aqua&nbsp;TCG
             </span>
-            <span className="bg-pink text-ink border-2 border-paper-strong px-1.5 py-0.5 text-[9px] font-display tracking-wider">
+            <span className="bg-ocean text-ink border-2 border-paper-strong px-1.5 py-0.5 text-[9px] font-display tracking-wider">
               ADMIN
             </span>
           </Link>
@@ -176,10 +176,10 @@ function SidebarInner({
     <div className="flex flex-col h-full">
       <div className="px-4 py-4 border-b-2 border-paper-strong/20 hidden lg:flex items-baseline gap-2">
         <Link href="/admin" onClick={onNavigate} className="flex items-baseline gap-2">
-          <span className="font-display text-[20px] tracking-tight leading-none">
-            cardbuy
+          <span className="font-display text-[20px] tracking-tight leading-none text-sun">
+            Aqua&nbsp;TCG
           </span>
-          <span className="bg-pink text-ink border-2 border-paper-strong px-1.5 py-0.5 text-[9px] font-display tracking-wider">
+          <span className="bg-ocean text-ink border-2 border-paper-strong px-1.5 py-0.5 text-[9px] font-display tracking-wider">
             ADMIN
           </span>
         </Link>
@@ -221,7 +221,7 @@ function SidebarInner({
                       className={`min-w-[22px] text-center px-1.5 py-0.5 text-[10px] font-display tracking-wider tabular-nums border-2 rounded-sm ${
                         active
                           ? "border-ink bg-paper-strong text-ink"
-                          : "border-paper-strong bg-pink text-ink"
+                          : "border-paper-strong bg-ocean text-ink"
                       }`}
                     >
                       {item.badge}

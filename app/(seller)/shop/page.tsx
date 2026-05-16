@@ -76,11 +76,11 @@ export default async function ShopPage({
   return (
     <div className="max-w-[1300px] mx-auto px-4 py-8 flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <span className="bg-pink text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider">
+        <span className="bg-ocean text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider">
           The shop
         </span>
         <h1 className="font-display text-[36px] md:text-[44px] leading-none tracking-tight">
-          Browse Lewis&apos;s picks
+          Browse Aqua TCG&apos;s picks
         </h1>
         <p className="text-secondary text-[14px] max-w-[60ch]">
           Hand-picked Pokémon cards — raw and graded. Free Royal Mail
@@ -100,7 +100,7 @@ export default async function ShopPage({
            *  summary tap; desktop users never see the summary thanks
            *  to md:hidden. */}
           <details open className="md:contents">
-            <summary className="md:hidden cursor-pointer list-none px-4 py-3 flex items-center justify-between border-b-2 border-ink font-display text-[14px] tracking-wider hover:bg-yellow/30">
+            <summary className="md:hidden cursor-pointer list-none px-4 py-3 flex items-center justify-between border-b-2 border-ink font-display text-[14px] tracking-wider hover:bg-sun/30">
               <span>Filters</span>
               <span className="text-[11px] text-muted">tap to toggle</span>
             </summary>

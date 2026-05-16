@@ -6,18 +6,18 @@ import type {
   ReactNode,
 } from "react";
 
-type Variant = "primary" | "secondary" | "accent-teal" | "accent-yellow" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "accent-wave" | "accent-sun" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 const VARIANT: Record<Variant, string> = {
   primary:
-    "bg-pink text-ink border-[3px] border-ink shadow-[4px_4px_0_0_var(--color-ink)] hover:shadow-[6px_6px_0_0_var(--color-ink)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+    "bg-ocean text-ink border-[3px] border-ink shadow-[4px_4px_0_0_var(--color-ink)] hover:shadow-[6px_6px_0_0_var(--color-ink)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
   secondary:
     "bg-paper-strong text-ink border-[3px] border-ink shadow-[4px_4px_0_0_var(--color-ink)] hover:shadow-[6px_6px_0_0_var(--color-ink)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
-  "accent-teal":
-    "bg-teal text-ink border-[3px] border-ink shadow-[4px_4px_0_0_var(--color-ink)] hover:shadow-[6px_6px_0_0_var(--color-ink)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
-  "accent-yellow":
-    "bg-yellow text-ink border-[3px] border-ink shadow-[4px_4px_0_0_var(--color-ink)] hover:shadow-[6px_6px_0_0_var(--color-ink)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+  "accent-wave":
+    "bg-wave text-ink border-[3px] border-ink shadow-[4px_4px_0_0_var(--color-ink)] hover:shadow-[6px_6px_0_0_var(--color-ink)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
+  "accent-sun":
+    "bg-sun text-ink border-[3px] border-ink shadow-[4px_4px_0_0_var(--color-ink)] hover:shadow-[6px_6px_0_0_var(--color-ink)] hover:-translate-x-[1px] hover:-translate-y-[1px] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none",
   ghost:
     "bg-transparent text-ink border-2 border-ink hover:bg-ink hover:text-paper-strong",
   danger:

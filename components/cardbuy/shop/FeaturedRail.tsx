@@ -8,7 +8,7 @@ import { ListingCard } from "@/components/cardbuy/ListingCard";
 const EDGE_ZONE_FRACTION = 0.2;
 /** Peak scroll speed when the cursor sits at the outer edge. */
 const MAX_PX_PER_FRAME = 11;
-const ACCENT_CYCLE = ["pink", "teal", "yellow"] as const;
+const ACCENT_CYCLE = ["ocean", "wave", "sun"] as const;
 
 /**
  * Deterministic starburst polygon generator — identical algorithm to
@@ -41,7 +41,7 @@ const BURST_SM = buildBurst(8, 98, 48, 58);
 
 /**
  * Shopfront featured section — horizontally-scrollable rail of
- * Lewis's picks on a yellow pop-block stage.
+ * Aqua TCG's picks on a sun pop-block stage.
  *
  * Interaction:
  * - Mobile: native touch swipe via `overflow-x-auto`.
@@ -121,10 +121,10 @@ export function FeaturedRail({ featured }: { featured: MockListing[] }) {
   return (
     <section
       className="relative mt-4 mb-6 max-w-[960px] mx-auto w-full"
-      aria-label="Lewis's featured picks"
+      aria-label="Aqua TCG's featured picks"
     >
       {/* Silhouette-breaking starbursts behind the stage. Sized and
-       *  offset so they visibly poke out around the yellow frame's
+       *  offset so they visibly poke out around the sun frame's
        *  corners rather than disappearing behind it. */}
       <svg
         viewBox="0 0 200 200"
@@ -138,7 +138,7 @@ export function FeaturedRail({ featured }: { featured: MockListing[] }) {
         />
         <polygon
           points={BURST_LG}
-          fill="var(--color-pink)"
+          fill="var(--color-ocean)"
           stroke="var(--color-ink)"
           strokeWidth="5"
         />
@@ -155,27 +155,27 @@ export function FeaturedRail({ featured }: { featured: MockListing[] }) {
         />
         <polygon
           points={BURST_SM}
-          fill="var(--color-teal)"
+          fill="var(--color-wave)"
           stroke="var(--color-ink)"
           strokeWidth="5"
         />
       </svg>
 
-      {/* Sticker badge — sits over the top edge of the yellow stage. */}
+      {/* Sticker badge — sits over the top edge of the sun stage. */}
       <div
         aria-hidden="true"
-        className="absolute -top-4 md:-top-5 left-10 md:left-14 z-20 bg-ink text-paper-strong font-display tracking-wider text-[14px] md:text-[18px] leading-none px-3 py-2 border-[3px] border-ink rotate-[-3deg] shadow-[4px_4px_0_0_var(--color-pink)] uppercase select-none"
+        className="absolute -top-4 md:-top-5 left-10 md:left-14 z-20 bg-ink text-paper-strong font-display tracking-wider text-[14px] md:text-[18px] leading-none px-3 py-2 border-[3px] border-ink rotate-[-3deg] shadow-[4px_4px_0_0_var(--color-ocean)] uppercase select-none"
       >
-        Lewis&apos;s picks
+        Aqua TCG&apos;s picks
       </div>
 
-      {/* The yellow stage. overflow-visible so the sticker badge and
+      {/* The sun stage. overflow-visible so the sticker badge and
        *  drop shadow aren't clipped. Horizontal overflow is handled by
        *  the inner rail div below. `pt-0` pushes the rail's clip box
-       *  flush with the yellow frame's interior top edge — so the
+       *  flush with the sun frame's interior top edge — so the
        *  particle field (which extends -48px above each card) is
        *  allowed to paint all the way up to that edge before clipping. */}
-      <div className="relative z-10 bg-yellow border-[3px] border-ink rounded-lg shadow-[8px_8px_0_0_var(--color-ink)] pt-0 pb-3">
+      <div className="relative z-10 bg-sun border-[3px] border-ink rounded-lg shadow-[8px_8px_0_0_var(--color-ink)] pt-0 pb-3">
         <div ref={surfaceRef} className="relative featured-rail-surface">
           <div
             ref={railRef}

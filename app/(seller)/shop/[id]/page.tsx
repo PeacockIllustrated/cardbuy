@@ -39,7 +39,7 @@ export default async function ListingDetailPage({
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8 flex flex-col gap-8">
       <nav className="text-[12px] font-display tracking-wider text-muted">
-        <Link href="/shop" className="hover:text-pink">
+        <Link href="/shop" className="hover:text-ocean">
           ← Back to shop
         </Link>
       </nav>
@@ -60,7 +60,7 @@ export default async function ListingDetailPage({
 
         <div className="flex flex-col gap-6">
           <header className="flex flex-col gap-2">
-            <span className="font-display text-[10px] tracking-wider text-pink">
+            <span className="font-display text-[10px] tracking-wider text-ocean">
               {variantLabel}
             </span>
             <h1 className="font-display text-[32px] md:text-[40px] leading-[0.95] tracking-tight">
@@ -80,7 +80,7 @@ export default async function ListingDetailPage({
                 className={`font-display text-[11px] tracking-wider px-2 py-1 border-2 border-ink ${
                   soldOut
                     ? "bg-warn text-paper-strong border-warn"
-                    : "bg-teal text-ink"
+                    : "bg-wave text-ink"
                 }`}
               >
                 {soldOut ? "Sold out" : `${inStock} in stock`}
@@ -88,7 +88,7 @@ export default async function ListingDetailPage({
             </div>
 
             {listing.condition_notes ? (
-              <p className="text-[13px] text-secondary bg-yellow/30 border-l-4 border-yellow pl-3 py-2">
+              <p className="text-[13px] text-secondary bg-sun/30 border-l-4 border-sun pl-3 py-2">
                 <span className="font-display text-[10px] tracking-wider block">
                   Condition note
                 </span>

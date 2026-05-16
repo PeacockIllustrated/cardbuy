@@ -487,7 +487,7 @@ export function CardImage({
         <button
           type="button"
           onClick={requestTiltPermission}
-          className="absolute left-1/2 -translate-x-1/2 -bottom-3 z-20 font-display text-[10px] tracking-wider bg-yellow text-ink border-2 border-ink rounded-sm px-2 py-1 shadow-[2px_2px_0_0_var(--color-ink)] active:translate-y-[1px] active:shadow-[1px_1px_0_0_var(--color-ink)]"
+          className="absolute left-1/2 -translate-x-1/2 -bottom-3 z-20 font-display text-[10px] tracking-wider bg-sun text-ink border-2 border-ink rounded-sm px-2 py-1 shadow-[2px_2px_0_0_var(--color-ink)] active:translate-y-[1px] active:shadow-[1px_1px_0_0_var(--color-ink)]"
           style={{ transform: "translate(-50%, 0) translateZ(30px)" }}
         >
           Tap to enable tilt

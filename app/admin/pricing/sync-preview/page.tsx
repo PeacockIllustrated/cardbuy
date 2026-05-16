@@ -160,7 +160,7 @@ export default async function SyncPreviewPage() {
                     </TD>
                     <TD>
                       {gid != null ? (
-                        <span className="font-display text-[10px] tracking-wider bg-teal border-2 border-ink px-2 py-0.5">
+                        <span className="font-display text-[10px] tracking-wider bg-wave border-2 border-ink px-2 py-0.5">
                           MATCHED
                         </span>
                       ) : (

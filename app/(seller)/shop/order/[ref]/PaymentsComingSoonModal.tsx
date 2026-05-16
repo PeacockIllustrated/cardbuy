@@ -29,18 +29,18 @@ export function PaymentsComingSoonModal({
           Stripe payment capture isn&rsquo;t live yet — we&rsquo;re
           finishing the integration. Your order ({" "}
           <strong className="font-display">{reference}</strong>) is now on
-          Lewis&rsquo;s dashboard. When we launch real payments, we&rsquo;ll
+          Aqua TCG&rsquo;s dashboard. When we launch real payments, we&rsquo;ll
           email <strong>{buyerEmail}</strong> so you can complete the
           purchase.
         </p>
         <p className="text-[12px] text-secondary">
-          Your items are held while Lewis reviews. If you&rsquo;d prefer to
+          Your items are held while Aqua TCG reviews. If you&rsquo;d prefer to
           cancel, hit reply on our confirmation email.
         </p>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="pop-block rounded-sm bg-teal px-3 py-2 font-display text-[12px] tracking-wider text-ink self-end"
+          className="pop-block rounded-sm bg-wave px-3 py-2 font-display text-[12px] tracking-wider text-ink self-end"
         >
           Got it
         </button>

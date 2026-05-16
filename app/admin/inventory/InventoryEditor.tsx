@@ -91,7 +91,7 @@ export function InventoryEditor({ initial, featuredSlotCount }: Props) {
               className={`border-2 rounded-sm px-2.5 py-1 font-display text-[11px] tracking-wider uppercase transition-colors ${
                 tab === t.key
                   ? "border-ink bg-ink text-paper-strong"
-                  : "border-ink bg-paper-strong text-ink hover:bg-yellow"
+                  : "border-ink bg-paper-strong text-ink hover:bg-sun"
               }`}
             >
               {t.label}
@@ -134,7 +134,7 @@ export function InventoryEditor({ initial, featuredSlotCount }: Props) {
                   <TD>
                     <Link
                       href={`/shop/${l.id}`}
-                      className="font-display text-[13px] tracking-tight underline underline-offset-4 decoration-2 hover:text-pink"
+                      className="font-display text-[13px] tracking-tight underline underline-offset-4 decoration-2 hover:text-ocean"
                     >
                       {l.card_name}
                     </Link>

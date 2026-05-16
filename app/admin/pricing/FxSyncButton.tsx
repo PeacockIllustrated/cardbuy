@@ -77,7 +77,7 @@ export function FxSyncButton({
           <span
             role="status"
             className={`font-display text-[10px] tracking-wider ${
-              result.ok ? "text-teal" : "text-warn"
+              result.ok ? "text-wave" : "text-warn"
             }`}
           >
             {result.text}
@@ -87,7 +87,7 @@ export function FxSyncButton({
           type="button"
           onClick={handleClick}
           disabled={pending}
-          className="pop-block rounded-sm bg-yellow px-3 py-1.5 font-display text-[11px] tracking-wider text-ink disabled:opacity-50"
+          className="pop-block rounded-sm bg-sun px-3 py-1.5 font-display text-[11px] tracking-wider text-ink disabled:opacity-50"
           title="Fetch current USD rates from open.er-api.com"
         >
           {pending ? "Fetching…" : "Run FX sync"}

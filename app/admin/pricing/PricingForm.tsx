@@ -126,7 +126,7 @@ export function PricingForm({ initial, lastSavedAt, initialFxEurGbp }: Props) {
       {/* Sticky save bar */}
       <div className="pop-card rounded-md px-3 py-2 flex items-center justify-between sticky top-2 bg-paper-strong z-10 gap-3 flex-wrap">
         <div className="flex flex-col gap-0.5">
-          <Annotation>PRICING CONFIG · Lewis&apos;s control panel</Annotation>
+          <Annotation>PRICING CONFIG · Aqua TCG&apos;s control panel</Annotation>
           <span
             className={`text-[11px] font-display tracking-wider tabular-nums ${
               dirty ? "text-warn" : "text-muted"

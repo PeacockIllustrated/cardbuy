@@ -1,6 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/_actions/auth";
+import { WaveDivider } from "@/components/cardbuy/WaveDivider";
 
 export async function SellerNav() {
   const supabase = await createClient();
@@ -21,23 +23,32 @@ export async function SellerNav() {
   return (
     <header className="border-b-[3px] border-ink bg-paper-strong sticky top-0 z-30">
       <div className="max-w-[1300px] mx-auto px-3 md:px-4 py-2.5 md:py-3 flex items-center justify-between gap-2 md:gap-6">
-        <Link href="/" className="flex items-baseline gap-2 shrink-0">
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Image
+            src="/aqua-tcg.svg"
+            alt=""
+            width={30}
+            height={32}
+            priority
+            className="w-[26px] h-[28px] md:w-[30px] md:h-[32px]"
+          />
           <span className="font-display text-[18px] md:text-[24px] tracking-tight leading-none">
-            cardbuy
+            <span className="text-ocean">Aqua</span>
+            <span className="text-sun">&nbsp;TCG</span>
           </span>
-          <span className="hidden sm:inline-block bg-pink text-ink border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider rotate-[-2deg]">
+          <span className="hidden sm:inline-block bg-ocean text-paper-strong border-2 border-ink px-1.5 py-0.5 text-[9px] font-display tracking-wider rotate-[-2deg]">
             BETA
           </span>
         </Link>
         <nav className="flex items-center gap-0.5 md:gap-1 font-display text-[11px] md:text-[12px] tracking-wider min-w-0">
-          <NavLink href="/shop" tone="pink">Shop</NavLink>
-          <NavLink href="/packs" tone="yellow">Sell</NavLink>
-          <NavLink href="/binder" tone="teal" hideOnNarrow>Binder</NavLink>
-          <NavLink href="/submission" tone="teal" hideOnNarrow>
+          <NavLink href="/shop" tone="ocean">Shop</NavLink>
+          <NavLink href="/packs" tone="sun">Sell</NavLink>
+          <NavLink href="/binder" tone="wave" hideOnNarrow>Binder</NavLink>
+          <NavLink href="/submission" tone="wave" hideOnNarrow>
             <span className="md:hidden">Cart</span>
             <span className="hidden md:inline">My&nbsp;sub</span>
           </NavLink>
-          <NavLink href="/shop/cart" tone="pink">Basket</NavLink>
+          <NavLink href="/shop/cart" tone="ocean">Basket</NavLink>
 
           {user ? (
             <div className="hidden sm:flex items-center gap-2 shrink-0 ml-1 md:ml-2 pl-2 md:pl-3 border-l-2 border-ink/15">
@@ -51,7 +62,7 @@ export async function SellerNav() {
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="font-display text-[10px] tracking-wider text-ink underline underline-offset-4 decoration-2 hover:text-pink"
+                  className="font-display text-[10px] tracking-wider text-ink underline underline-offset-4 decoration-2 hover:text-ocean"
                 >
                   Sign out
                 </button>
@@ -60,7 +71,7 @@ export async function SellerNav() {
           ) : (
             <Link
               href="/login"
-              className="hidden sm:inline-flex shrink-0 ml-1 md:ml-2 px-2 py-1 border-2 border-ink rounded-sm bg-yellow text-ink font-display text-[10px] md:text-[11px] tracking-wider hover:bg-pink"
+              className="hidden sm:inline-flex shrink-0 ml-1 md:ml-2 px-2 py-1 border-2 border-ink rounded-sm bg-sun text-ink font-display text-[10px] md:text-[11px] tracking-wider hover:bg-ocean"
             >
               Sign in
             </Link>
@@ -76,6 +87,7 @@ export async function SellerNav() {
           ) : null}
         </nav>
       </div>
+      <WaveDivider fill="var(--color-ocean)" height={10} />
     </header>
   );
 }
@@ -88,15 +100,15 @@ function NavLink({
 }: {
   href: string;
   children: React.ReactNode;
-  tone: "pink" | "teal" | "yellow";
+  tone: "ocean" | "wave" | "sun";
   hideOnNarrow?: boolean;
 }) {
   const hover =
-    tone === "pink"
-      ? "hover:bg-pink"
-      : tone === "teal"
-        ? "hover:bg-teal"
-        : "hover:bg-yellow";
+    tone === "ocean"
+      ? "hover:bg-ocean"
+      : tone === "wave"
+        ? "hover:bg-wave"
+        : "hover:bg-sun";
   return (
     <Link
       href={href}

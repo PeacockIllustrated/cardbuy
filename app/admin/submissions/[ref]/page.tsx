@@ -110,7 +110,7 @@ export default async function AdminSubmissionDetailPage({
       <nav className="text-[12px] text-muted font-display tracking-wider">
         <Link
           href="/admin/submissions"
-          className="underline underline-offset-4 decoration-2 hover:text-pink"
+          className="underline underline-offset-4 decoration-2 hover:text-ocean"
         >
           ← back to queue
         </Link>

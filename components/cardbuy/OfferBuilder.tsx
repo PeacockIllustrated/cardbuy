@@ -113,7 +113,7 @@ export function OfferBuilder({
           className={`px-4 py-2 font-display text-[12px] tracking-wider transition-colors ${
             variant === "raw"
               ? "bg-ink text-paper-strong"
-              : "bg-paper-strong text-ink hover:bg-yellow"
+              : "bg-paper-strong text-ink hover:bg-sun"
           }`}
         >
           Raw
@@ -127,7 +127,7 @@ export function OfferBuilder({
           className={`px-4 py-2 font-display text-[12px] tracking-wider border-l-[3px] border-ink transition-colors ${
             variant === "graded"
               ? "bg-ink text-paper-strong"
-              : "bg-paper-strong text-ink hover:bg-yellow"
+              : "bg-paper-strong text-ink hover:bg-sun"
           } disabled:text-muted disabled:cursor-not-allowed disabled:hover:bg-paper-strong`}
         >
           Graded
@@ -203,7 +203,7 @@ export function OfferBuilder({
 
       {/* Offer headline */}
       <div className="border-t-[3px] border-ink pt-5 flex flex-col gap-3">
-        <div className="relative bg-yellow border-[3px] border-ink rounded-md p-4 flex flex-col gap-1 overflow-hidden">
+        <div className="relative bg-sun border-[3px] border-ink rounded-md p-4 flex flex-col gap-1 overflow-hidden">
           <span className="font-display text-[10px] tracking-wider text-ink/70">
             {offer.belowMin ? "Value" : "Our offer"}
           </span>
@@ -221,7 +221,7 @@ export function OfferBuilder({
               aria-hidden
               className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-[-8deg]"
             >
-              <div className="relative border-[4px] border-warn text-warn px-3 py-2 rounded-sm bg-yellow/80 shadow-[3px_3px_0_0_rgba(0,0,0,0.15)]">
+              <div className="relative border-[4px] border-warn text-warn px-3 py-2 rounded-sm bg-sun/80 shadow-[3px_3px_0_0_rgba(0,0,0,0.15)]">
                 <div className="absolute inset-[3px] border-2 border-warn/70 rounded-sm pointer-events-none" />
                 <div className="font-display uppercase text-[12px] tracking-[0.08em] leading-tight text-center">
                   Sorry<br />
@@ -256,13 +256,13 @@ export function OfferBuilder({
       ) : null}
 
       {added ? (
-        <div className="bg-teal/20 border-2 border-ink rounded-md px-3 py-3 flex items-center justify-between gap-3">
+        <div className="bg-wave/20 border-2 border-ink rounded-md px-3 py-3 flex items-center justify-between gap-3">
           <span className="font-display text-[13px] tracking-tight">
             Added to submission ✓
           </span>
           <Link
             href="/submission"
-            className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 hover:text-pink"
+            className="font-display text-[11px] tracking-wider underline underline-offset-4 decoration-2 hover:text-ocean"
           >
             View submission →
           </Link>

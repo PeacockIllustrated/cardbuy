@@ -18,7 +18,7 @@ export default async function SubmissionPage() {
     return (
       <div className="max-w-[720px] mx-auto px-4 py-12 flex flex-col gap-6">
         <header className="flex flex-col gap-2">
-          <span className="bg-yellow text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
+          <span className="bg-sun text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
             Selling to us
           </span>
           <h1 className="font-display text-[36px] leading-none tracking-tight">
@@ -47,7 +47,7 @@ export default async function SubmissionPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8 flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <span className="bg-yellow text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
+        <span className="bg-sun text-ink border-2 border-ink w-fit px-2 py-1 font-display text-[10px] tracking-wider rounded-sm">
           Selling to us
         </span>
         <h1 className="font-display text-[36px] leading-none tracking-tight">

@@ -14,7 +14,7 @@ type Props = {
   /** Optional colored tone for a small pill to the right of the title. */
   kicker?: {
     label: string;
-    tone: "pink" | "teal" | "yellow" | "paper";
+    tone: "ocean" | "wave" | "sun" | "paper";
   };
   /** Optional subtitle / explanation under the title. */
   subtitle?: ReactNode;
@@ -23,9 +23,9 @@ type Props = {
 };
 
 const TONE_BG: Record<NonNullable<Props["kicker"]>["tone"], string> = {
-  pink: "bg-pink",
-  teal: "bg-teal",
-  yellow: "bg-yellow",
+  ocean: "bg-ocean",
+  wave: "bg-wave",
+  sun: "bg-sun",
   paper: "bg-paper-strong",
 };
 

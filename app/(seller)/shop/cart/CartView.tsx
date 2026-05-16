@@ -151,7 +151,7 @@ export function CartView() {
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <Link
                         href={`/shop/${r.listing.id}`}
-                        className="font-display text-[13px] tracking-tight hover:text-pink leading-tight"
+                        className="font-display text-[13px] tracking-tight hover:text-ocean leading-tight"
                       >
                         {r.listing.card_name}
                       </Link>
@@ -231,7 +231,7 @@ export function CartView() {
       <section className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-6 items-start">
         <div
           className={`pop-card rounded-md p-4 flex flex-col gap-2 text-[13px] ${
-            subtotal >= 250 ? "bg-teal/30" : "bg-yellow/30"
+            subtotal >= 250 ? "bg-wave/30" : "bg-sun/30"
           }`}
         >
           <span className="font-display text-[11px] tracking-wider">

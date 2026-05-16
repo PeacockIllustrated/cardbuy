@@ -24,7 +24,7 @@ export default async function AdminPricingPage() {
           { label: "Pricing" },
         ]}
         title="Pricing & margins"
-        kicker={{ label: "CONTROL PANEL", tone: "yellow" }}
+        kicker={{ label: "CONTROL PANEL", tone: "sun" }}
         subtitle="The dials behind every buylist quote — global margin, FX, per-condition and per-set multipliers. Saves snapshot into audit history."
       />
       <FxSyncButton

@@ -34,7 +34,7 @@ import type {
  *                   button returns to the pack list.
  *
  * The shell mirrors `BinderPanel` deliberately so the two views feel
- * interchangeable — same teal cover, same ringed spine, same
+ * interchangeable — same wave cover, same ringed spine, same
  * 3D page-flip animation between pages. CSS classes (`binder-flip-*`)
  * are shared with `app/globals.css`.
  * ───────────────────────────────────────────────────────────────── */
@@ -128,12 +128,12 @@ export function PacksView({ packs, initialOpenSetId = null }: Props) {
 
 /* ─────────────────────────────────────────────────────────────────
  * Empty state — the user hasn't added any cards yet, so there are
- * no packs to show. Wrapped in the same teal cover so the surface
+ * no packs to show. Wrapped in the same wave cover so the surface
  * still reads as "the packs binder" rather than a generic blank.
  * ───────────────────────────────────────────────────────────────── */
 function PacksEmpty() {
   return (
-    <div className="pop-static rounded-md bg-teal p-2 md:p-2.5">
+    <div className="pop-static rounded-md bg-wave p-2 md:p-2.5">
       <div className="rounded-sm border-[2px] border-ink bg-paper-strong p-8 md:p-12 text-center min-h-[420px] md:min-h-[520px] flex flex-col items-center justify-center">
         <div className="font-display text-[10px] tracking-[0.25em] text-muted">
           Packs
@@ -149,7 +149,7 @@ function PacksEmpty() {
         <div className="mt-5">
           <Link
             href="/shop"
-            className="pop-block rounded-sm bg-yellow px-3 py-1.5 font-display text-[11px] tracking-[0.2em] uppercase text-ink"
+            className="pop-block rounded-sm bg-sun px-3 py-1.5 font-display text-[11px] tracking-[0.2em] uppercase text-ink"
           >
             Browse the shop
           </Link>
@@ -318,7 +318,7 @@ function PacksOverviewPane({
         </div>
         <div className="mt-3 h-4 border-[3px] border-ink bg-paper rounded-sm overflow-hidden">
           <div
-            className="h-full bg-pink border-r-[3px] border-ink"
+            className="h-full bg-ocean border-r-[3px] border-ink"
             style={{ width: `${Math.min(100, startedPct)}%` }}
           />
         </div>
@@ -360,7 +360,7 @@ function PackPreviewPane({
   return (
     <div className="flex flex-col h-full relative">
       {locked ? (
-        <span className="absolute top-0 right-0 pop-card rounded-sm bg-yellow px-2 py-0.5 font-display text-[9px] tracking-[0.2em] text-ink z-10">
+        <span className="absolute top-0 right-0 pop-card rounded-sm bg-sun px-2 py-0.5 font-display text-[9px] tracking-[0.2em] text-ink z-10">
           Locked · esc
         </span>
       ) : null}
@@ -414,7 +414,7 @@ function PackPreviewPane({
         </div>
         <div className="mt-3 h-4 border-[3px] border-ink bg-paper rounded-sm overflow-hidden">
           <div
-            className="h-full bg-pink border-r-[3px] border-ink"
+            className="h-full bg-ocean border-r-[3px] border-ink"
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>
@@ -433,7 +433,7 @@ function PackPreviewPane({
         <button
           type="button"
           onClick={onOpen}
-          className="pop-block rounded-sm bg-yellow w-full px-3 py-2 font-display text-[12px] tracking-[0.22em] uppercase text-ink"
+          className="pop-block rounded-sm bg-sun w-full px-3 py-2 font-display text-[12px] tracking-[0.22em] uppercase text-ink"
         >
           {pack.locked ? "Browse pack →" : "Open pack →"}
         </button>
@@ -528,7 +528,7 @@ function BinderPackTile({
   const [dark, light, foil] = paletteFor(pack.setId);
   const ring = isActive
     ? isLocked
-      ? "ring-[3px] ring-yellow"
+      ? "ring-[3px] ring-sun"
       : "ring-[3px] ring-ink/40"
     : "";
   const lockedStyle = pack.locked ? "grayscale opacity-70" : "";
@@ -608,7 +608,7 @@ function BinderPackTile({
         </div>
         <div className="h-2 border-[2px] border-ink bg-paper rounded-sm overflow-hidden">
           <div
-            className="h-full bg-pink"
+            className="h-full bg-ocean"
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>
@@ -646,7 +646,7 @@ function PackDetailBinder({
         <button
           type="button"
           onClick={onBack}
-          className="pop-card rounded-sm bg-paper-strong px-2.5 py-1 font-display text-[10px] tracking-[0.2em] uppercase text-ink hover:bg-yellow"
+          className="pop-card rounded-sm bg-paper-strong px-2.5 py-1 font-display text-[10px] tracking-[0.2em] uppercase text-ink hover:bg-sun"
         >
           ← All packs
         </button>
@@ -658,7 +658,7 @@ function PackDetailBinder({
       </div>
 
       {loading && !detail ? (
-        <div className="pop-static rounded-md bg-teal p-2 md:p-2.5">
+        <div className="pop-static rounded-md bg-wave p-2 md:p-2.5">
           <div className="rounded-sm border-[2px] border-ink bg-paper-strong p-12 text-center min-h-[420px] md:min-h-[520px] flex items-center justify-center">
             <div className="font-display text-[11px] tracking-[0.25em] uppercase text-muted">
               Loading pack&hellip;
@@ -666,9 +666,9 @@ function PackDetailBinder({
           </div>
         </div>
       ) : error ? (
-        <div className="pop-static rounded-md bg-teal p-2 md:p-2.5">
+        <div className="pop-static rounded-md bg-wave p-2 md:p-2.5">
           <div className="rounded-sm border-[2px] border-ink bg-paper-strong p-12 text-center min-h-[300px] flex items-center justify-center">
-            <div className="inline-block pop-card rounded-sm bg-pink px-3 py-2 font-display text-[11px] tracking-[0.2em] uppercase text-ink">
+            <div className="inline-block pop-card rounded-sm bg-ocean px-3 py-2 font-display text-[11px] tracking-[0.2em] uppercase text-ink">
               {error}
             </div>
           </div>
@@ -882,7 +882,7 @@ function PackHeaderPane({
         </div>
         <div className="mt-3 h-4 border-[3px] border-ink bg-paper rounded-sm overflow-hidden">
           <div
-            className="h-full bg-pink border-r-[3px] border-ink"
+            className="h-full bg-ocean border-r-[3px] border-ink"
             style={{ width: `${Math.min(100, pct)}%` }}
           />
         </div>
@@ -912,7 +912,7 @@ function PackCardDetailPane({
   return (
     <div className="flex flex-col h-full relative">
       {locked ? (
-        <span className="absolute top-0 right-0 pop-card rounded-sm bg-yellow px-2 py-0.5 font-display text-[9px] tracking-[0.2em] text-ink z-10">
+        <span className="absolute top-0 right-0 pop-card rounded-sm bg-sun px-2 py-0.5 font-display text-[9px] tracking-[0.2em] text-ink z-10">
           Locked · esc
         </span>
       ) : null}
@@ -967,7 +967,7 @@ function PackCardDetailPane({
       <div className="mt-auto pt-5 flex flex-col gap-2">
         <Link
           href={`/card/${card.id}`}
-          className="pop-block rounded-sm bg-yellow w-full px-3 py-2 text-center font-display text-[12px] tracking-[0.22em] uppercase text-ink"
+          className="pop-block rounded-sm bg-sun w-full px-3 py-2 text-center font-display text-[12px] tracking-[0.22em] uppercase text-ink"
         >
           View card →
         </Link>
@@ -1039,7 +1039,7 @@ function PackCardSlot({
 }) {
   const ring = isActive
     ? isLocked
-      ? "ring-[3px] ring-yellow"
+      ? "ring-[3px] ring-sun"
       : "ring-[3px] ring-ink/40"
     : "";
   return (
@@ -1074,7 +1074,7 @@ function PackCardSlot({
         #{card.number}
       </span>
       {card.owned && card.quantity > 1 ? (
-        <span className="absolute -bottom-1 -right-1 z-[4] bg-teal border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider rotate-[3deg] pointer-events-none tabular-nums rounded-sm leading-none">
+        <span className="absolute -bottom-1 -right-1 z-[4] bg-wave border-2 border-ink px-1.5 py-0.5 font-display text-[9px] tracking-wider rotate-[3deg] pointer-events-none tabular-nums rounded-sm leading-none">
           ×{card.quantity}
         </span>
       ) : null}
@@ -1088,7 +1088,7 @@ function PackCardSlot({
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * BinderShell — the teal-cover, two-page, ringed-spine layout that
+ * BinderShell — the wave-cover, two-page, ringed-spine layout that
  * both the pack list and pack detail share. Mirrors the regions
  * binder's shell exactly (same paddings, same border weights, same
  * spine width) so the two views feel like the same physical binder.
@@ -1121,7 +1121,7 @@ function BinderShell({
   onFlipNext: () => void;
 }) {
   return (
-    <div className="pop-static rounded-md bg-teal p-2 md:p-2.5 relative z-[1]">
+    <div className="pop-static rounded-md bg-wave p-2 md:p-2.5 relative z-[1]">
       <div className="grid grid-cols-1 md:grid-cols-[1fr_72px_1.45fr] rounded-sm overflow-hidden border-[2px] border-ink">
         {/* ─── LEFT PAGE · info pane ───────────────────────────── */}
         {/* `min-w-0` keeps this column locked to its grid allocation —

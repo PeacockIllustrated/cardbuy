@@ -35,7 +35,7 @@ export function TR({
   ...rest
 }: HTMLAttributes<HTMLTableRowElement> & { children: ReactNode }) {
   return (
-    <tr {...rest} className={`border-b-2 border-ink/15 last:border-0 hover:bg-yellow/15 ${className}`.trim()}>
+    <tr {...rest} className={`border-b-2 border-ink/15 last:border-0 hover:bg-sun/15 ${className}`.trim()}>
       {children}
     </tr>
   );

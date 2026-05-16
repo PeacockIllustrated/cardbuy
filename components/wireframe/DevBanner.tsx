@@ -13,7 +13,7 @@ export async function DevBanner() {
 
   return (
     <div
-      className="border-[3px] border-ink bg-yellow px-4 py-2 font-display text-[12px] tracking-wider text-ink flex items-center gap-3 justify-between rounded-md"
+      className="border-[3px] border-ink bg-sun px-4 py-2 font-display text-[12px] tracking-wider text-ink flex items-center gap-3 justify-between rounded-md"
       role="status"
     >
       <div className="flex items-center gap-3">
@@ -25,7 +25,7 @@ export async function DevBanner() {
       <form action={signOut}>
         <button
           type="submit"
-          className="text-[11px] tracking-wider underline underline-offset-4 decoration-2 hover:text-pink"
+          className="text-[11px] tracking-wider underline underline-offset-4 decoration-2 hover:text-ocean"
         >
           Sign out
         </button>

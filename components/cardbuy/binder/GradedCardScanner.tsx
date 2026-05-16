@@ -330,7 +330,7 @@ function CameraStage({
           type="button"
           onClick={onCapture}
           disabled={Boolean(cameraError)}
-          className="pop-block rounded-sm bg-pink px-4 py-2 font-display text-[13px] tracking-wider text-ink disabled:opacity-50 flex-1 min-w-[140px]"
+          className="pop-block rounded-sm bg-ocean px-4 py-2 font-display text-[13px] tracking-wider text-ink disabled:opacity-50 flex-1 min-w-[140px]"
         >
           ◉ Capture
         </button>
@@ -394,7 +394,7 @@ function ReviewStage({
         <button
           type="button"
           onClick={onConfirm}
-          className="pop-block rounded-sm bg-teal px-4 py-2 font-display text-[12px] tracking-wider text-ink ml-auto"
+          className="pop-block rounded-sm bg-wave px-4 py-2 font-display text-[12px] tracking-wider text-ink ml-auto"
         >
           Use this photo →
         </button>
@@ -503,7 +503,7 @@ function ConfirmStage({
           type="button"
           onClick={onUpload}
           disabled={pending}
-          className="pop-block rounded-sm bg-teal px-4 py-2 font-display text-[12px] tracking-wider text-ink ml-auto disabled:opacity-50"
+          className="pop-block rounded-sm bg-wave px-4 py-2 font-display text-[12px] tracking-wider text-ink ml-auto disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save to binder"}
         </button>

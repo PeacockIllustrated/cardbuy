@@ -8,12 +8,12 @@ import {
 } from "@/app/_actions/prices";
 import { TriggerSyncButton } from "./TriggerSyncButton";
 
-export const metadata = { title: "Sync · cardbuy admin" };
+export const metadata = { title: "Sync · Aqua TCG admin" };
 
 const STATUS_TONES: Record<string, string> = {
   running: "bg-paper-strong text-ink",
-  success: "bg-teal text-ink",
-  partial: "bg-yellow text-ink",
+  success: "bg-wave text-ink",
+  partial: "bg-sun text-ink",
   failed: "bg-warn text-paper-strong",
 };
 
@@ -48,7 +48,7 @@ export default async function AdminSyncPage() {
           { label: "Sync" },
         ]}
         title="Catalogue sync"
-        kicker={{ label: "CRON · 04:00 UTC", tone: "teal" }}
+        kicker={{ label: "CRON · 04:00 UTC", tone: "wave" }}
         subtitle="Nightly TCGCSV → Supabase price ingest. Trigger an immediate run below if you need fresher data before a quote."
       />
 
